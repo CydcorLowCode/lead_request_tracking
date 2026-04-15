@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { toast } from "sonner";
 
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
@@ -46,6 +47,31 @@ function formatLeadTypeLabel(value: string) {
     .filter(Boolean)
     .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
     .join(" ");
+}
+
+function CopyValueButton({ text, ariaLabel }: { text: string; ariaLabel: string }) {
+  const [copied, setCopied] = useState(false);
+  const trimmed = text.trim();
+  if (!trimmed || trimmed === "—") return null;
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1500);
+        } catch {
+          toast.error("Could not copy to clipboard.");
+        }
+      }}
+      className="inline-flex h-7 shrink-0 items-center rounded-[6px] border border-[var(--border)] bg-transparent px-2 text-[10px] font-medium text-[var(--muted)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
+      aria-label={`Copy ${ariaLabel}`}
+    >
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
 }
 
 function AuditEntry({ entry, currentUserId }: { entry: AuditRow; currentUserId: string }) {
@@ -131,6 +157,22 @@ export function RequestDetailView({
 
   const formData = row.form_data as Record<string, unknown> | null;
 
+  const ownerDisplay = ownerProfile?.full_name ?? ownerProfile?.email ?? "—";
+  const ownerCopyText = ownerProfile?.full_name ?? ownerProfile?.email ?? "";
+  const dealerCopyText = row.dealer_code ?? "";
+  const dmaCopyText = row.dma ?? "";
+  const officeCopyText = row.office ?? "";
+  const dateNeededDisplay = row.date_needed_by
+    ? new Date(row.date_needed_by).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+    : "—";
+  const dateNeededCopyText = row.date_needed_by ? dateNeededDisplay : "";
+  const submittedCopyText = row.created_at ? formatDateTime(row.created_at) : "";
+  const reservesCopyText = row.is_reserve ? "Yes" : "No";
+  const zipCodesCopyText = formData?.zip_codes != null && String(formData.zip_codes).trim() !== ""
+    ? String(formData.zip_codes)
+    : "";
+  const submitterNotesCopyText = row.notes?.trim() ?? "";
+
   return (
     <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-6 py-10">
       {/* Header */}
@@ -185,63 +227,93 @@ export function RequestDetailView({
             <div className="grid grid-cols-2 gap-x-6 gap-y-5 px-5 py-5 sm:grid-cols-3">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Owner</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]">
-                  {ownerProfile?.full_name ?? ownerProfile?.email ?? "—"}
-                </p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{ownerDisplay}</p>
+                  <CopyValueButton text={ownerCopyText} ariaLabel="owner" />
+                </div>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Dealer Code</p>
-                <p className="mt-1 font-mono text-sm text-[var(--foreground)]">{row.dealer_code ?? "—"}</p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 font-mono text-sm text-[var(--foreground)]">{row.dealer_code ?? "—"}</p>
+                  <CopyValueButton text={dealerCopyText} ariaLabel="dealer code" />
+                </div>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Lead Area</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]">{row.lead_area_requested}</p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.lead_area_requested}</p>
+                  <CopyValueButton text={row.lead_area_requested} ariaLabel="lead area" />
+                </div>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">DMA</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]">{row.dma ?? "—"}</p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.dma ?? "—"}</p>
+                  <CopyValueButton text={dmaCopyText} ariaLabel="DMA" />
+                </div>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Office</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]">{row.office ?? "—"}</p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.office ?? "—"}</p>
+                  <CopyValueButton text={officeCopyText} ariaLabel="office" />
+                </div>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Date Needed By</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]">
-                  {row.date_needed_by
-                    ? new Date(row.date_needed_by).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
-                    : "—"}
-                </p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{dateNeededDisplay}</p>
+                  <CopyValueButton text={dateNeededCopyText} ariaLabel="date needed by" />
+                </div>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Submitted</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]">{formatDateTime(row.created_at)}</p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{formatDateTime(row.created_at)}</p>
+                  <CopyValueButton text={submittedCopyText} ariaLabel="submitted date" />
+                </div>
               </div>
               <div>
                 <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Company Reserves</p>
-                <p className="mt-1 text-sm text-[var(--foreground)]">{row.is_reserve ? "Yes" : "No"}</p>
+                <div className="mt-1 flex items-start gap-2">
+                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.is_reserve ? "Yes" : "No"}</p>
+                  <CopyValueButton text={reservesCopyText} ariaLabel="company reserves" />
+                </div>
               </div>
               {row.headcount != null ? (
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Headcount</p>
-                  <p className="mt-1 text-sm text-[var(--foreground)]">{row.headcount}</p>
+                  <div className="mt-1 flex items-start gap-2">
+                    <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.headcount}</p>
+                    <CopyValueButton text={String(row.headcount)} ariaLabel="headcount" />
+                  </div>
                 </div>
               ) : null}
               {row.att_confirmation_number ? (
                 <div>
                   <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">AT&T Conf. #</p>
-                  <p className="mt-1 font-mono text-sm text-[var(--foreground)]">{row.att_confirmation_number}</p>
+                  <div className="mt-1 flex items-start gap-2">
+                    <p className="min-w-0 flex-1 font-mono text-sm text-[var(--foreground)]">{row.att_confirmation_number}</p>
+                    <CopyValueButton text={row.att_confirmation_number} ariaLabel="AT&T confirmation number" />
+                  </div>
                 </div>
               ) : null}
               {formData?.zip_codes ? (
                 <div className="col-span-2 sm:col-span-3">
-                  <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Zip Codes</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Zip Codes</p>
+                    <CopyValueButton text={zipCodesCopyText} ariaLabel="zip codes" />
+                  </div>
                   <p className="mt-1 font-mono text-sm text-[var(--foreground)]">{String(formData.zip_codes)}</p>
                 </div>
               ) : null}
               {row.notes ? (
                 <div className="col-span-2 sm:col-span-3">
-                  <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Submitter Notes</p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Submitter Notes</p>
+                    <CopyValueButton text={submitterNotesCopyText} ariaLabel="submitter notes" />
+                  </div>
                   <p className="mt-1 text-sm text-[var(--foreground)]">{row.notes}</p>
                 </div>
               ) : null}
@@ -269,7 +341,10 @@ export function RequestDetailView({
                     </select>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-[var(--secondary)]">AT&T Confirmation #</label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-medium text-[var(--secondary)]">AT&T Confirmation #</label>
+                      <CopyValueButton text={attConfirmationNumber} ariaLabel="AT&T confirmation number" />
+                    </div>
                     <input
                       type="text"
                       value={attConfirmationNumber}
@@ -282,7 +357,10 @@ export function RequestDetailView({
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-[var(--secondary)]">Internal Notes</label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-medium text-[var(--secondary)]">Internal Notes</label>
+                      <CopyValueButton text={internalNotes} ariaLabel="internal notes" />
+                    </div>
                     <textarea
                       value={internalNotes}
                       onChange={(e) => setInternalNotes(e.target.value)}
@@ -292,7 +370,10 @@ export function RequestDetailView({
                     />
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-medium text-[var(--secondary)]">Notes for ICL</label>
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-medium text-[var(--secondary)]">Notes for ICL</label>
+                      <CopyValueButton text={notesForIcl} ariaLabel="notes for ICL" />
+                    </div>
                     <textarea
                       value={notesForIcl}
                       onChange={(e) => setNotesForIcl(e.target.value)}
@@ -345,7 +426,10 @@ export function RequestDetailView({
             /* Owner read-only notes */
             row.notes_for_icl ? (
               <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-5 py-4">
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Notes from Territory Team</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Notes from Territory Team</p>
+                  <CopyValueButton text={row.notes_for_icl} ariaLabel="notes from territory team" />
+                </div>
                 <p className="mt-2 text-sm text-[var(--foreground)]">{row.notes_for_icl}</p>
               </div>
             ) : null

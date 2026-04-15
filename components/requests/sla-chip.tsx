@@ -4,7 +4,7 @@ type SlaChipProps = {
 };
 
 const BASE_CLASS =
-  "inline-flex h-7 items-center rounded-[6px] border border-[var(--border)] px-2.5 font-mono text-xs";
+  "inline-flex min-h-7 items-center rounded-[6px] border border-[var(--border)] px-3 py-1.5 font-mono text-xs leading-snug";
 
 export function SlaChip({ slaStatus, hoursRemaining = null }: SlaChipProps) {
   if (!slaStatus) {

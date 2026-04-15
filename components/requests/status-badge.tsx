@@ -38,7 +38,7 @@ export function StatusBadge({ status }: { status: LeadRequestStatus }) {
   const config = STATUS_BADGE_STYLES[status];
   return (
     <span
-      className={`inline-flex h-7 items-center rounded-[6px] border border-[var(--border)] px-2.5 text-xs font-medium ${config.className}`}
+      className={`inline-flex min-h-7 items-center rounded-[6px] border border-[var(--border)] px-3 py-1.5 text-xs font-medium leading-snug ${config.className}`}
     >
       {config.label}
     </span>

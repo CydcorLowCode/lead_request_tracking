@@ -1,5 +1,6 @@
 "use server";
 
+import { buildMsFormUrl } from "@/lib/att-form/build-ms-form-url";
 import { getSessionContext } from "@/lib/auth/get-session-user";
 import { computeSlaDueAt, pickSlaConfigForLeadType } from "@/lib/sla/compute";
 import { createClient } from "@/lib/supabase/server";
@@ -24,6 +25,7 @@ type SubmitLeadRequestResult = {
   errors?: Record<string, string>;
   message?: string;
   redirectTo?: string;
+  msFormUrl?: string;
 };
 
 function required(value: string) {
@@ -72,7 +74,7 @@ export async function submitLeadRequestAction(
   const supabase = await createClient();
   const { data: ownerProfile, error: ownerError } = await supabase
     .from("lrt_profiles")
-    .select("id, full_name, email, role, is_active")
+    .select("id, full_name, email, role, is_active, phone, office_name, legal_corp_name")
     .eq("id", normalizedOwnerId)
     .maybeSingle();
 
@@ -103,6 +105,23 @@ export async function submitLeadRequestAction(
   const submittedOnBehalf =
     ctx.profile.role === "territory_team" && ownerProfile.id !== ctx.profile.id;
 
+  const submittedAt = new Date();
+  const msFormUrl = buildMsFormUrl({
+    leadType: input.leadType,
+    ownerFullName: ownerProfile.full_name ?? "",
+    ownerEmail: ownerProfile.email,
+    ownerPhone: ownerProfile.phone ?? null,
+    ownerOfficeName: ownerProfile.office_name ?? null,
+    ownerLegalCorpName: ownerProfile.legal_corp_name ?? null,
+    dealerCode: input.dealerCode.trim(),
+    dateNeededBy: input.dateNeededBy || null,
+    state: input.state,
+    dma: input.dma,
+    leadAreaRequested: input.requestedLocation,
+    territoryManagerFullName: ctx.profile.full_name ?? ctx.profile.email,
+    submittedAt,
+  });
+
   const { error: insertError } = await supabase.from("lrt_lead_requests").insert({
     campaign_id: input.campaignId,
     owner_id: ownerProfile.id,
@@ -122,6 +141,7 @@ export async function submitLeadRequestAction(
     form_data: {
       state: input.state,
       zip_codes: input.zipCodes.trim(),
+      ms_form_url: msFormUrl,
     },
   });
 
@@ -132,5 +152,6 @@ export async function submitLeadRequestAction(
   return {
     ok: true,
     redirectTo: ctx.profile.role === "territory_team" ? "/dashboard" : "/my-requests",
+    msFormUrl,
   };
 }

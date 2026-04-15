@@ -499,7 +499,7 @@ export function DashboardView() {
                         <p className="font-mono text-xs text-[var(--muted)]">{row.dealer_code ?? "—"}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex h-7 items-center rounded-[6px] bg-[var(--input)] px-2.5 font-mono text-xs text-[var(--foreground)]">
+                        <span className="inline-flex min-h-7 items-center rounded-[6px] bg-[var(--input)] px-3 py-1.5 font-mono text-xs leading-snug text-[var(--foreground)]">
                           {formatLeadType(row.lead_type)}
                         </span>
                       </td>

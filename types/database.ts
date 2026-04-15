@@ -50,6 +50,7 @@ export type Database = {
           dealer_code: string | null;
           legal_corp_name: string | null;
           office_name: string | null;
+          phone: string | null;
           sf_contact_id: string | null;
           sf_synced_at: string | null;
           is_active: boolean;
@@ -65,6 +66,7 @@ export type Database = {
           dealer_code?: string | null;
           legal_corp_name?: string | null;
           office_name?: string | null;
+          phone?: string | null;
           sf_contact_id?: string | null;
           sf_synced_at?: string | null;
           is_active?: boolean;
@@ -80,6 +82,7 @@ export type Database = {
           dealer_code?: string | null;
           legal_corp_name?: string | null;
           office_name?: string | null;
+          phone?: string | null;
           sf_contact_id?: string | null;
           sf_synced_at?: string | null;
           is_active?: boolean;

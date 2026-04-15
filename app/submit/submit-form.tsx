@@ -46,6 +46,11 @@ type DmaOption = {
   isWarning: boolean;
 };
 
+type SubmitSuccessState = {
+  msFormUrl: string;
+  redirectTo: string;
+};
+
 const STATES = [
   "AL",
   "AK",
@@ -152,6 +157,7 @@ export function SubmitForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [zipWarning, setZipWarning] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<SubmitSuccessState | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -271,6 +277,24 @@ export function SubmitForm({
     router.push("/my-requests");
   }
 
+  function resetFormAfterSuccess() {
+    setSubmitSuccess(null);
+    setLeadType(leadTypes[0]?.value ?? "");
+    setOwnerId(sessionRole === "owner" ? sessionProfileId : "");
+    setDealerCode(sessionRole === "owner" ? sessionOwnerDealerCode : "");
+    setDma("");
+    setStateCode("");
+    setRequestedLocation("");
+    setZipCodes("");
+    setDateNeededBy("");
+    setIsReserve(false);
+    setNotes("");
+    setErrors({});
+    setZipWarning(null);
+    setGlobalError(null);
+    setIsSubmitting(false);
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setGlobalError(null);
@@ -305,8 +329,18 @@ export function SubmitForm({
       }
 
       toast.success("Request submitted successfully");
-      router.push(result.redirectTo ?? "/my-requests");
-      router.refresh();
+
+      if (result.msFormUrl) {
+        setSubmitSuccess({
+          msFormUrl: result.msFormUrl,
+          redirectTo: result.redirectTo ?? "/my-requests",
+        });
+        router.refresh();
+      } else {
+        router.push(result.redirectTo ?? "/my-requests");
+        router.refresh();
+      }
+      setIsSubmitting(false);
     } catch {
       setGlobalError("Something went wrong. Please try again.");
       setIsSubmitting(false);
@@ -337,6 +371,65 @@ export function SubmitForm({
 
       <Card>
         <CardContent className="space-y-8">
+          {submitSuccess ? (
+            <div className="flex flex-col items-center gap-6 py-4 text-center">
+              <div
+                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--status-green)] text-white shadow-sm"
+                aria-hidden="true"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-8 w-8"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+              </div>
+              <div className="max-w-md space-y-2">
+                <h3 className="text-lg font-semibold text-[var(--foreground)]">
+                  Request Saved
+                </h3>
+                <p className="text-sm leading-relaxed text-[var(--secondary)]">
+                  Your lead request has been saved. Now open the AT&amp;T form to
+                  complete the submission — it&apos;s pre-filled with the details you
+                  entered.
+                </p>
+              </div>
+              <div className="flex w-full max-w-md flex-col gap-3">
+                <a
+                  href={submitSuccess.msFormUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center rounded-[var(--radius-control)] border border-[var(--accent)] bg-[var(--accent)] px-6 py-3.5 text-base font-semibold text-[var(--foreground)] transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                >
+                  Open AT&amp;T Form →
+                </a>
+                <button
+                  type="button"
+                  className="inline-flex h-10 w-full items-center justify-center rounded-[6px] border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:border-[var(--border-hover)]"
+                  onClick={resetFormAfterSuccess}
+                >
+                  Submit Another Request
+                </button>
+                <button
+                  type="button"
+                  className="text-sm font-medium text-[var(--accent)] underline-offset-4 hover:underline"
+                  onClick={() => {
+                    router.push(submitSuccess.redirectTo);
+                  }}
+                >
+                  {submitSuccess.redirectTo === "/dashboard"
+                    ? "View Dashboard"
+                    : "View My Requests"}
+                </button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-8">
             <section>
               <SectionHeading title="Lead Type" />
@@ -568,6 +661,7 @@ export function SubmitForm({
               </Button>
             </div>
           </form>
+          )}
         </CardContent>
       </Card>
     </div>
