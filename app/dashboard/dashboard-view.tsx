@@ -475,8 +475,11 @@ export function DashboardView() {
       </div>
 
       {isBulkStatusModalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg)]/75 px-4">
-          <div className="w-full max-w-[520px] rounded-[10px] border border-[var(--border2)] bg-[var(--card)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: "color-mix(in oklab, var(--secondary) 45%, transparent)" }}
+        >
+          <div className="w-full max-w-[520px] rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
             <h2 className="text-lg font-semibold text-[var(--foreground)]">Update {selectedCount} requests</h2>
             <p className="mt-1 text-sm text-[var(--secondary)]">Choose a new status for all selected requests.</p>
 
@@ -487,7 +490,7 @@ export function DashboardView() {
               value={bulkStatus}
               onChange={(event) => setBulkStatus(event.target.value as LeadRequestStatus)}
               disabled={bulkSubmitting}
-              className="mt-2 h-10 w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-70"
+              className="mt-2 h-10 w-full rounded-[6px] border border-[var(--border)] bg-[var(--card)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -497,7 +500,7 @@ export function DashboardView() {
             </select>
 
             {bulkError ? (
-              <p className="mt-3 rounded-[6px] border border-[#ef44444d] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--status-red)]">
+              <p className="mt-3 rounded-[6px] border border-[#ef44444d] bg-[var(--card)] px-3 py-2 text-sm text-[var(--status-red)]">
                 {bulkError}
               </p>
             ) : null}

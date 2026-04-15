@@ -14,7 +14,6 @@ export type BulkUpdateStatusInput = {
 export type BulkUpdateStatusResult = {
   ok: boolean;
   message?: string;
-  updatedCount?: number;
 };
 
 function toValidStatus(value: string): LeadRequestStatus | null {
@@ -69,8 +68,6 @@ export async function bulkUpdateStatusAction(
     return { ok: false, message: updateError.message };
   }
 
-  const updatedCount = updatedRows?.length ?? 0;
-
   for (const requestId of ids) {
     const { error: auditError } = await appendAuditLog(supabase, {
       requestId,
@@ -81,15 +78,14 @@ export async function bulkUpdateStatusAction(
     if (auditError) {
       return {
         ok: false,
-        message: `Status updated for ${updatedCount} requests, but failed to write audit log for one or more records.`,
-        updatedCount,
+        message: "Status updated, but failed to write one or more audit log entries.",
       };
     }
   }
 
+  const updatedCount = updatedRows?.length ?? 0;
   return {
     ok: true,
-    updatedCount,
     message: `Updated ${updatedCount} request${updatedCount === 1 ? "" : "s"}.`,
   };
 }
