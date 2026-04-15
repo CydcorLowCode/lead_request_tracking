@@ -9,7 +9,6 @@ import { LogoutButton } from "@/components/auth/logout-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   buildSlaWarningLookup,
-  formatLeadType,
   getWarningHoursForRequest,
   toLeadRequestStatus,
   type LeadRequestRow,
