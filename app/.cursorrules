@@ -1,0 +1,18 @@
+You are building the AT&T Lead Request Tracking app.
+
+Stack: Next.js 14 (App Router), TypeScript, Supabase, Tailwind CSS, shadcn/ui, Vercel.
+
+Rules:
+- Always use TypeScript with strict types — no 'any'
+- Use the App Router and server components by default; use 'use client' only when necessary
+- All database access goes through Supabase server client (never expose service role key to client)
+- RLS is enforced at the database level — always respect it, never bypass with service role on the frontend
+- Two roles only: territory_team and owner — check role from users table, not just auth metadata
+- Use React Query for all client-side data fetching
+- Use shadcn/ui components for all UI elements
+- Write Supabase queries using the JS client (not raw SQL in app code)
+- All status transitions must write an audit_log entry — do this server-side
+- Never hard delete users — set is_active = false
+- sla_due_at is calculated on status change to 'submitted_to_client', not on record creation
+- Keep components small and focused — split into /components, /lib, /types folders
+- .env.local for all secrets — never hardcode credentials
