@@ -1,0 +1,107 @@
+"use server";
+
+import { appendAuditLog } from "@/lib/audit/append-audit-log";
+import { getSessionContext } from "@/lib/auth/get-session-user";
+import { createClient } from "@/lib/supabase/server";
+import type { LeadRequestStatus } from "@/types/enums";
+import { LEAD_REQUEST_STATUSES } from "@/types/enums";
+
+export type UpdateLeadRequestInput = {
+  requestId: string;
+  status: string;
+  attConfirmationNumber: string;
+  attResponseNotes: string;
+  internalNotes: string;
+  notesForIcl: string;
+};
+
+export type UpdateLeadRequestResult = {
+  ok: boolean;
+  errors?: Record<string, string>;
+  message?: string;
+};
+
+function toValidStatus(value: string): LeadRequestStatus | null {
+  if ((LEAD_REQUEST_STATUSES as readonly string[]).includes(value)) {
+    return value as LeadRequestStatus;
+  }
+  return null;
+}
+
+export async function updateLeadRequestAction(
+  input: UpdateLeadRequestInput,
+): Promise<UpdateLeadRequestResult> {
+  const ctx = await getSessionContext();
+  if (!ctx) return { ok: false, message: "You must be signed in." };
+
+  if (ctx.profile.role !== "territory_team") {
+    return { ok: false, message: "Only territory team members can update requests." };
+  }
+
+  const newStatus = toValidStatus(input.status);
+  if (!newStatus) {
+    return { ok: false, errors: { status: "Invalid status value." } };
+  }
+
+  const supabase = await createClient();
+
+  const { data: current, error: fetchError } = await supabase
+    .from("lrt_lead_requests")
+    .select("status, att_confirmation_number, att_response_at, internal_notes, notes_for_icl")
+    .eq("id", input.requestId)
+    .maybeSingle();
+
+  if (fetchError || !current) {
+    return { ok: false, message: "Request not found." };
+  }
+
+  const now = new Date().toISOString();
+  const terminalStatuses: LeadRequestStatus[] = [
+    "visible_in_salesforce", "declined", "leads_pulled_back", "market_proposal_answered",
+  ];
+  const attResponseAt =
+    current.att_response_at ??
+    (terminalStatuses.includes(newStatus) ? now : null);
+
+  const { error: updateError } = await supabase
+    .from("lrt_lead_requests")
+    .update({
+      status: newStatus,
+      att_confirmation_number: input.attConfirmationNumber.trim() || null,
+      att_response_at: attResponseAt,
+      internal_notes: input.internalNotes.trim() || null,
+      notes_for_icl: input.notesForIcl.trim() || null,
+      updated_at: now,
+    })
+    .eq("id", input.requestId);
+
+  if (updateError) return { ok: false, message: updateError.message };
+
+  const auditPromises: Promise<unknown>[] = [];
+
+  if (current.status !== newStatus) {
+    auditPromises.push(
+      appendAuditLog(supabase, {
+        requestId: input.requestId,
+        fieldName: "status",
+        oldValue: current.status,
+        newValue: newStatus,
+      }),
+    );
+  }
+
+  const newConfNum = input.attConfirmationNumber.trim() || null;
+  if (current.att_confirmation_number !== newConfNum) {
+    auditPromises.push(
+      appendAuditLog(supabase, {
+        requestId: input.requestId,
+        fieldName: "att_confirmation_number",
+        oldValue: current.att_confirmation_number,
+        newValue: newConfNum,
+      }),
+    );
+  }
+
+  await Promise.all(auditPromises);
+  return { ok: true };
+}
