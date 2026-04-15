@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   buildSlaWarningLookup,
   formatLeadType,
@@ -45,6 +47,7 @@ function RequestCardSkeleton() {
 }
 
 export function MyRequestsView() {
+  const router = useRouter();
   const [rows, setRows] = useState<LeadRequestRow[]>([]);
   const [slaConfigs, setSlaConfigs] = useState<SlaConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,13 +136,14 @@ export function MyRequestsView() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
-          <LogoutButton />
           <Link
             href="/submit"
             className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110"
           >
             New Request
           </Link>
+          <LogoutButton />
+          <ThemeToggle />
         </div>
       </div>
 
@@ -159,7 +163,7 @@ export function MyRequestsView() {
               }`}
             >
               <span>{tab.label}</span>
-              <span className="rounded-[6px] bg-[#242834] px-2 py-0.5 font-mono text-xs text-[var(--secondary)]">
+              <span className="rounded-[6px] bg-[var(--input)] px-2 py-0.5 font-mono text-xs text-[var(--secondary)]">
                 {count}
               </span>
             </button>
@@ -220,9 +224,7 @@ export function MyRequestsView() {
               <button
                 key={row.id}
                 type="button"
-                onClick={() => {
-                  console.log(`/requests/${row.id}`);
-                }}
+                onClick={() => router.push(`/requests/${row.id}`)}
                 className="relative block w-full overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)] text-left transition-colors hover:border-[var(--border-hover)]"
               >
                 <span className={`absolute inset-y-0 left-0 w-1 ${accentClass}`} aria-hidden />

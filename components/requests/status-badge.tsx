@@ -13,7 +13,7 @@ const STATUS_BADGE_STYLES: Record<
     className: "bg-[#4f7cff26] text-[var(--status-blue)]",
   },
   leads_received: {
-    label: "Leads Received",
+    label: "Leads Received by Cydcor",
     className: "bg-[#a855f72b] text-[var(--status-purple)]",
   },
   visible_in_salesforce: {
@@ -25,11 +25,11 @@ const STATUS_BADGE_STYLES: Record<
     className: "bg-[#ef444433] text-[var(--status-red)]",
   },
   market_proposal_answered: {
-    label: "Proposal Answered",
+    label: "Market Proposal Answered",
     className: "bg-[#f59e0b26] text-[var(--status-amber)]",
   },
   leads_pulled_back: {
-    label: "Leads Pulled Back",
+    label: "Leads Pulled Back by Client",
     className: "bg-[#f59e0b26] text-[var(--status-amber)]",
   },
 };

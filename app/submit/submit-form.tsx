@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
 import type { LrtProfileRole } from "@/types/database";
 
@@ -310,7 +311,10 @@ export function SubmitForm({
             New Lead Request
           </h2>
         </div>
-        <p className="text-sm text-[var(--secondary)]">{campaignName}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-[var(--secondary)]">{campaignName}</p>
+          <ThemeToggle />
+        </div>
       </div>
 
       <Card>

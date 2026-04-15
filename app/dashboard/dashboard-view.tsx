@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { bulkUpdateStatusAction } from "@/app/dashboard/actions";
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   buildSlaWarningLookup,
   formatLeadType,
@@ -19,14 +22,25 @@ import {
 import { evaluateSlaStatus } from "@/lib/sla/evaluate";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/types/database";
+import type { LeadRequestStatus } from "@/types/enums";
 
 type SlaFilter = "all" | "overdue" | "at_risk" | "on_track";
 type SlaConfigRow = Pick<Tables<"lrt_sla_configs">, "campaign_id" | "lead_type" | "warning_hours">;
 type ProfileRow = Pick<Tables<"lrt_profiles">, "id" | "full_name" | "email">;
 
 const FILTER_CHIPS = ["All Status", "Lead Type", "Office", "DMA", "Date Range"];
+const STATUS_OPTIONS: Array<{ value: LeadRequestStatus; label: string }> = [
+  { value: "new", label: "New" },
+  { value: "submitted_to_client", label: "Submitted to AT&T" },
+  { value: "leads_received", label: "Leads Received by Cydcor" },
+  { value: "visible_in_salesforce", label: "Visible in Salesforce" },
+  { value: "declined", label: "Declined" },
+  { value: "market_proposal_answered", label: "Market Proposal Answered" },
+  { value: "leads_pulled_back", label: "Leads Pulled Back by Client" },
+];
 
 export function DashboardView() {
+  const router = useRouter();
   const [rows, setRows] = useState<LeadRequestRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [slaConfigs, setSlaConfigs] = useState<SlaConfigRow[]>([]);
@@ -35,69 +49,73 @@ export function DashboardView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [slaFilter, setSlaFilter] = useState<SlaFilter>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkStatusModalOpen, setIsBulkStatusModalOpen] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState<LeadRequestStatus>("new");
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
 
-  useEffect(() => {
-    let isActive = true;
+  const loadDashboardData = useCallback(async () => {
     const supabase = createClient();
+    setLoading(true);
+    setError(null);
 
-    async function load() {
-      setLoading(true);
-      setError(null);
+    const [{ data: requestData, error: requestError }, { data: configData, error: configError }] =
+      await Promise.all([
+        supabase.from("lrt_lead_requests").select("*"),
+        supabase
+          .from("lrt_sla_configs")
+          .select("campaign_id, lead_type, warning_hours"),
+      ]);
 
-      const [{ data: requestData, error: requestError }, { data: configData, error: configError }] =
-        await Promise.all([
-          supabase.from("lrt_lead_requests").select("*"),
-          supabase
-            .from("lrt_sla_configs")
-            .select("campaign_id, lead_type, warning_hours"),
-        ]);
-
-      if (!isActive) {
-        return;
-      }
-
-      if (requestError || configError) {
-        setRows([]);
-        setProfiles([]);
-        setSlaConfigs([]);
-        setError(requestError?.message ?? configError?.message ?? "Unable to load dashboard data.");
-        setLoading(false);
-        return;
-      }
-
-      const loadedRows = requestData ?? [];
-      const ownerIds = Array.from(new Set(loadedRows.map((row) => row.owner_id)));
-
-      let loadedProfiles: ProfileRow[] = [];
-      if (ownerIds.length > 0) {
-        const { data: profileData, error: profileError } = await supabase
-          .from("lrt_profiles")
-          .select("id, full_name, email")
-          .in("id", ownerIds);
-
-        if (!isActive) {
-          return;
-        }
-
-        if (profileError) {
-          setError(profileError.message);
-        } else {
-          loadedProfiles = profileData ?? [];
-        }
-      }
-
-      setRows(loadedRows);
-      setProfiles(loadedProfiles);
-      setSlaConfigs(configData ?? []);
-      setLoading(false);
+    if (!isMountedRef.current) {
+      return;
     }
 
-    void load();
+    if (requestError || configError) {
+      setRows([]);
+      setProfiles([]);
+      setSlaConfigs([]);
+      setError(requestError?.message ?? configError?.message ?? "Unable to load dashboard data.");
+      setLoading(false);
+      return;
+    }
+
+    const loadedRows = requestData ?? [];
+    const ownerIds = Array.from(new Set(loadedRows.map((row) => row.owner_id)));
+
+    let loadedProfiles: ProfileRow[] = [];
+    if (ownerIds.length > 0) {
+      const { data: profileData, error: profileError } = await supabase
+        .from("lrt_profiles")
+        .select("id, full_name, email")
+        .in("id", ownerIds);
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      if (profileError) {
+        setError(profileError.message);
+      } else {
+        loadedProfiles = profileData ?? [];
+      }
+    }
+
+    setRows(loadedRows);
+    setProfiles(loadedProfiles);
+    setSlaConfigs(configData ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    void loadDashboardData();
 
     return () => {
-      isActive = false;
+      isMountedRef.current = false;
     };
-  }, []);
+  }, [loadDashboardData]);
 
   const warningLookup = useMemo(() => buildSlaWarningLookup(slaConfigs), [slaConfigs]);
   const profileMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
@@ -179,15 +197,50 @@ export function DashboardView() {
     });
   }
 
+  function openBulkStatusModal() {
+    setBulkError(null);
+    setIsBulkStatusModalOpen(true);
+  }
+
+  async function handleBulkStatusConfirm() {
+    if (selectedIds.size === 0) {
+      setBulkError("Select at least one request.");
+      return;
+    }
+
+    setBulkSubmitting(true);
+    setBulkError(null);
+    try {
+      const result = await bulkUpdateStatusAction({
+        ids: Array.from(selectedIds),
+        status: bulkStatus,
+      });
+
+      if (!result.ok) {
+        setBulkError(result.message ?? "Unable to update request statuses.");
+        return;
+      }
+
+      setSelectedIds(new Set());
+      await loadDashboardData();
+      setIsBulkStatusModalOpen(false);
+    } catch {
+      setBulkError("Unexpected error updating request statuses.");
+    } finally {
+      setBulkSubmitting(false);
+    }
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-[1220px] flex-col gap-6 px-6 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
+        <div> 
           <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">Dashboard</h1>
           <p className="mt-1 text-sm text-[var(--secondary)]">AT&amp;T Residential</p>
         </div>
         <div className="flex items-center gap-2">
           <LogoutButton />
+          <ThemeToggle />
           <button
             type="button"
             className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
@@ -253,7 +306,7 @@ export function DashboardView() {
           <button
             key={chip}
             type="button"
-            className="inline-flex h-8 items-center rounded-[6px] border border-[var(--border)] bg-[#242834] px-3 text-xs font-medium text-[var(--secondary)]"
+            className="inline-flex h-8 items-center rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 text-xs font-medium text-[var(--secondary)]"
           >
             {chip}
           </button>
@@ -334,14 +387,12 @@ export function DashboardView() {
                   const selected = selectedIds.has(row.id);
                   return (
                     <tr
-                      key={row.id}
-                      onClick={() => {
-                        console.log(`/requests/${row.id}`);
-                      }}
-                      className={`cursor-pointer transition-colors hover:bg-[var(--input)] ${
-                        index < filteredRows.length - 1 ? "border-b border-[var(--border)]" : ""
-                      }`}
-                    >
+  key={row.id}
+  onClick={() => router.push(`/requests/${row.id}`)}
+  className={`cursor-pointer transition-colors hover:bg-[var(--input)] ${
+    index < filteredRows.length - 1 ? "border-b border-[var(--border)]" : ""
+  }`}
+>
                       <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
                         <input
                           type="checkbox"
@@ -355,7 +406,7 @@ export function DashboardView() {
                         <p className="font-mono text-xs text-[var(--muted)]">{row.dealer_code ?? "—"}</p>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="inline-flex h-7 items-center rounded-[6px] bg-[#242834] px-2.5 font-mono text-xs text-[var(--foreground)]">
+                        <span className="inline-flex h-7 items-center rounded-[6px] bg-[var(--input)] px-2.5 font-mono text-xs text-[var(--foreground)]">
                           {formatLeadType(row.lead_type)}
                         </span>
                       </td>
@@ -396,6 +447,7 @@ export function DashboardView() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            onClick={openBulkStatusModal}
             className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-3 text-sm text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
           >
             Update Status
@@ -421,6 +473,56 @@ export function DashboardView() {
           </button>
         </div>
       </div>
+
+      {isBulkStatusModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg)]/75 px-4">
+          <div className="w-full max-w-[520px] rounded-[10px] border border-[var(--border2)] bg-[var(--card)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+            <h2 className="text-lg font-semibold text-[var(--foreground)]">Update {selectedCount} requests</h2>
+            <p className="mt-1 text-sm text-[var(--secondary)]">Choose a new status for all selected requests.</p>
+
+            <label className="mt-4 block text-xs uppercase tracking-[0.08em] text-[var(--secondary)]">
+              Status
+            </label>
+            <select
+              value={bulkStatus}
+              onChange={(event) => setBulkStatus(event.target.value as LeadRequestStatus)}
+              disabled={bulkSubmitting}
+              className="mt-2 h-10 w-full rounded-[6px] border border-[var(--border)] bg-[var(--bg)] px-3 text-sm text-[var(--foreground)] outline-none focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+
+            {bulkError ? (
+              <p className="mt-3 rounded-[6px] border border-[#ef44444d] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--status-red)]">
+                {bulkError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsBulkStatusModalOpen(false)}
+                disabled={bulkSubmitting}
+                className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-3 text-sm text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleBulkStatusConfirm()}
+                disabled={bulkSubmitting}
+                className="inline-flex h-9 items-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-3 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {bulkSubmitting ? "Updating..." : "Confirm"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
 import { LogoutButton } from "@/components/auth/logout-button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   buildSlaWarningLookup,
   formatLeadType,
@@ -134,7 +135,7 @@ export function RequestDetailView({
   return (
     <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-6 py-10">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start gap-4">
         <div className="flex items-center gap-3">
           <Link
             href={isTerritoryTeam ? "/dashboard" : "/my-requests"}
@@ -157,10 +158,17 @@ export function RequestDetailView({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <StatusBadge status={status} />
           <SlaChip slaStatus={sla?.status ?? null} hoursRemaining={sla?.hours ?? null} />
           <LogoutButton />
+          <ThemeToggle />
+          <Link
+            href="/submit"
+            className="inline-flex h-9 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110"
+          >
+            New Request
+          </Link>
         </div>
       </div>
 
@@ -171,7 +179,7 @@ export function RequestDetailView({
           <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] overflow-hidden">
             <div className="flex items-center gap-3 border-b border-[var(--border)] px-5 py-3.5">
               <p className="text-sm font-semibold text-[var(--foreground)]">Request Details</p>
-              <span className="ml-auto inline-flex h-6 items-center rounded-[6px] bg-[#242834] px-2.5 font-mono text-xs text-[var(--muted)]">
+              <span className="ml-auto inline-flex h-6 items-center rounded-[6px] bg-[var(--input)] px-2.5 font-mono text-xs text-[var(--muted)]">
                 {formatLeadTypeLabel(row.lead_type)}
               </span>
             </div>
