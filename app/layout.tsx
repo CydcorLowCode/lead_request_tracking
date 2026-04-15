@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Mono, DM_Sans } from "next/font/google";
+import Script from "next/script";
 
 import { Providers } from "@/providers";
 import "./globals.css";
@@ -31,23 +32,14 @@ export default function RootLayout({
       className={`${dmSans.variable} ${dmMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <head>
-        <script
+      <body className="flex min-h-full flex-col">
+        <Script
+          id="lrt-theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
-            __html: `
-  try {
-    const t = localStorage.getItem('lrt-theme');
-    if (t === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
-  } catch(e) {}
-`,
+            __html: `try{var t=localStorage.getItem('lrt-theme');if(t==='light'){document.documentElement.classList.remove('dark');}else{document.documentElement.classList.add('dark');}}catch(e){}`,
           }}
         />
-      </head>
-      <body className="flex min-h-full flex-col">
         <Providers>{children}</Providers>
       </body>
     </html>

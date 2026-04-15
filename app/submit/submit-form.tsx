@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useEffect, useMemo, useState, useTransition } from "react";
+import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -42,6 +42,7 @@ type OwnerOption = {
 type DmaOption = {
   id: string;
   dmaName: string;
+  state: string | null;
   isWarning: boolean;
 };
 
@@ -125,7 +126,8 @@ export function SubmitForm({
   sessionOwnerDealerCode,
 }: SubmitFormProps) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const todayStr = new Date().toLocaleDateString("en-CA");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
   const [dmaOptions, setDmaOptions] = useState<DmaOption[]>([]);
@@ -180,7 +182,7 @@ export function SubmitForm({
       setIsDmaLoading(true);
       const { data } = await supabase
         .from("lrt_dmas")
-        .select("id, dma_name, is_warning")
+        .select("id, dma_name, state, is_warning")
         .eq("campaign_id", campaignId)
         .order("dma_name", { ascending: true });
 
@@ -188,6 +190,7 @@ export function SubmitForm({
         (data ?? []).map((item) => ({
           id: item.id,
           dmaName: item.dma_name,
+          state: item.state ?? null,
           isWarning: item.is_warning,
         })),
       );
@@ -202,6 +205,12 @@ export function SubmitForm({
     () => dmaOptions.find((option) => option.dmaName === dma),
     [dma, dmaOptions],
   );
+  const filteredDmaOptions = useMemo(() => {
+    if (!stateCode) {
+      return dmaOptions;
+    }
+    return dmaOptions.filter((option) => option.state === stateCode);
+  }, [dmaOptions, stateCode]);
   const isZipVisible = ZIP_REQUIRED_LEAD_TYPES.has(leadType);
   const ownerLabel =
     sessionRole === "owner"
@@ -245,7 +254,11 @@ export function SubmitForm({
     if (!requestedLocation.trim()) {
       nextErrors.requestedLocation = "Lead area requested is required.";
     }
-    if (!dateNeededBy) nextErrors.dateNeededBy = "Date needed by is required.";
+    if (!dateNeededBy) {
+      nextErrors.dateNeededBy = "Date needed by is required.";
+    } else if (dateNeededBy < todayStr) {
+      nextErrors.dateNeededBy = "Date needed by cannot be in the past.";
+    }
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
@@ -258,14 +271,15 @@ export function SubmitForm({
     router.push("/my-requests");
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setGlobalError(null);
     if (!validateFields()) {
       return;
     }
 
-    startTransition(async () => {
+    setIsSubmitting(true);
+    try {
       const result = await submitLeadRequestAction({
         campaignId,
         defaultAreaType,
@@ -286,13 +300,17 @@ export function SubmitForm({
           setErrors(result.errors);
         }
         setGlobalError(result.message ?? "Unable to submit your request.");
+        setIsSubmitting(false);
         return;
       }
 
       toast.success("Request submitted successfully");
       router.push(result.redirectTo ?? "/my-requests");
       router.refresh();
-    });
+    } catch {
+      setGlobalError("Something went wrong. Please try again.");
+      setIsSubmitting(false);
+    }
   }
 
   function handleOwnerSelect(nextOwnerId: string) {
@@ -393,8 +411,14 @@ export function SubmitForm({
                     ) : (
                       <Combobox
                         value={dma}
-                        onChange={setDma}
-                        options={dmaOptions.map((item) => ({
+                        onChange={(nextDma) => {
+                          setDma(nextDma);
+                          const found = dmaOptions.find((o) => o.dmaName === nextDma);
+                          if (found?.state && STATES.includes(found.state)) {
+                            setStateCode(found.state);
+                          }
+                        }}
+                        options={filteredDmaOptions.map((item) => ({
                           value: item.dmaName,
                           label: item.dmaName,
                         }))}
@@ -412,7 +436,13 @@ export function SubmitForm({
                     <Select
                       id="state"
                       value={stateCode}
-                      onChange={(event) => setStateCode(event.target.value)}
+                      onChange={(event) => {
+                        const next = event.target.value;
+                        setStateCode(next);
+                        if (next && selectedDma && selectedDma.state !== next) {
+                          setDma("");
+                        }
+                      }}
                       placeholder="Select state"
                       options={STATES.map((state) => ({ value: state, label: state }))}
                     />
@@ -462,6 +492,7 @@ export function SubmitForm({
                   <Input
                     id="dateNeededBy"
                     type="date"
+                    min={todayStr}
                     value={dateNeededBy}
                     onChange={(event) => setDateNeededBy(event.target.value)}
                   />
@@ -474,25 +505,27 @@ export function SubmitForm({
               </div>
             </section>
 
-            <section>
-              <SectionHeading title="Options" />
-              <label className="flex w-full items-start gap-3 rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-3">
-                <input
-                  type="checkbox"
-                  checked={isReserve}
-                  onChange={(event) => setIsReserve(event.target.checked)}
-                  className="mt-1 h-4 w-4 accent-[var(--accent)]"
-                />
-                <span>
-                  <span className="block text-sm font-medium text-[var(--foreground)]">
-                    Company Reserves
+            {sessionRole === "territory_team" ? (
+              <section>
+                <SectionHeading title="Options" />
+                <label className="flex w-full items-start gap-3 rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-3">
+                  <input
+                    type="checkbox"
+                    checked={isReserve}
+                    onChange={(event) => setIsReserve(event.target.checked)}
+                    className="mt-1 h-4 w-4 accent-[var(--accent)]"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-[var(--foreground)]">
+                      Company Reserves
+                    </span>
+                    <span className="block text-sm text-[var(--secondary)]">
+                      Auto-approved - excluded from approval rate metrics
+                    </span>
                   </span>
-                  <span className="block text-sm text-[var(--secondary)]">
-                    Auto-approved - excluded from approval rate metrics
-                  </span>
-                </span>
-              </label>
-            </section>
+                </label>
+              </section>
+            ) : null}
 
             <section>
               <SectionHeading title="Notes" />
@@ -516,12 +549,12 @@ export function SubmitForm({
                 type="button"
                 className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:border-[var(--border-hover)]"
                 onClick={handleCancel}
-                disabled={isPending}
+                disabled={isSubmitting}
               >
                 Cancel
               </button>
-              <Button type="submit" className="w-auto px-5" disabled={isPending}>
-                {isPending ? (
+              <Button type="submit" className="w-auto px-5" disabled={isSubmitting}>
+                {isSubmitting ? (
                   <span className="inline-flex items-center gap-2">
                     <span
                       className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"

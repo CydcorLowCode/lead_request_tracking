@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -30,8 +30,22 @@ export function Combobox({
   disabled = false,
   className,
 }: ComboboxProps) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    function handleMouseDown(event: MouseEvent) {
+      const el = rootRef.current;
+      if (!el || !(event.target instanceof Node) || el.contains(event.target)) {
+        return;
+      }
+      setIsOpen(false);
+      setQuery("");
+    }
+    document.addEventListener("mousedown", handleMouseDown);
+    return () => document.removeEventListener("mousedown", handleMouseDown);
+  }, []);
 
   const selected = options.find((option) => option.value === value);
   const filtered = useMemo(() => {
@@ -45,7 +59,7 @@ export function Combobox({
   }, [query, options]);
 
   return (
-    <div className={cn("relative", className)}>
+    <div ref={rootRef} className={cn("relative", className)}>
       <button
         type="button"
         className={cn(

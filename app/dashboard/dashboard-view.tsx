@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { bulkUpdateStatusAction } from "@/app/dashboard/actions";
 import { SlaChip } from "@/components/requests/sla-chip";
@@ -19,6 +20,7 @@ import {
   toLeadRequestStatus,
   type LeadRequestRow,
 } from "@/lib/lead-requests/presentation";
+import { exportLeadRequests } from "@/lib/export/export-requests";
 import { evaluateSlaStatus } from "@/lib/sla/evaluate";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/types/database";
@@ -53,6 +55,9 @@ export function DashboardView() {
   const [bulkStatus, setBulkStatus] = useState<LeadRequestStatus>("new");
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("xlsx");
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
   const isMountedRef = useRef(true);
 
   const loadDashboardData = useCallback(async () => {
@@ -116,6 +121,20 @@ export function DashboardView() {
       isMountedRef.current = false;
     };
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    if (!exportMenuOpen) {
+      return;
+    }
+    function handlePointerDown(event: PointerEvent) {
+      if (exportMenuRef.current?.contains(event.target as Node)) {
+        return;
+      }
+      setExportMenuOpen(false);
+    }
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [exportMenuOpen]);
 
   const warningLookup = useMemo(() => buildSlaWarningLookup(slaConfigs), [slaConfigs]);
   const profileMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
@@ -202,6 +221,36 @@ export function DashboardView() {
     setIsBulkStatusModalOpen(true);
   }
 
+  function exportFilteredRows(format: "csv" | "xlsx") {
+    if (filteredRows.length === 0) {
+      toast.error("No rows to export");
+      return;
+    }
+    const data = filteredRows.map(({ row }) => row);
+    exportLeadRequests(data, profileMap, { format });
+  }
+
+  function handleHeaderExportXlsx() {
+    setExportMenuOpen(false);
+    setExportFormat("xlsx");
+    exportFilteredRows("xlsx");
+  }
+
+  function handleMenuExport(format: "csv" | "xlsx") {
+    setExportFormat(format);
+    setExportMenuOpen(false);
+    exportFilteredRows(format);
+  }
+
+  function handleExportSelected() {
+    const selectedRows = rows.filter((r) => selectedIds.has(r.id));
+    if (selectedRows.length === 0) {
+      toast.error("No rows to export");
+      return;
+    }
+    exportLeadRequests(selectedRows, profileMap, { format: "xlsx" });
+  }
+
   async function handleBulkStatusConfirm() {
     if (selectedIds.size === 0) {
       setBulkError("Select at least one request.");
@@ -241,12 +290,56 @@ export function DashboardView() {
         <div className="flex items-center gap-2">
           <LogoutButton />
           <ThemeToggle />
-          <button
-            type="button"
-            className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
-          >
-            Export
-          </button>
+          <div ref={exportMenuRef} className="relative">
+            <div className="inline-flex h-10 overflow-hidden rounded-[6px] border border-[var(--border)] bg-transparent">
+              <button
+                type="button"
+                onClick={handleHeaderExportXlsx}
+                className="inline-flex items-center justify-center border-r border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--secondary)] transition-colors hover:bg-[var(--input)] hover:text-[var(--foreground)]"
+              >
+                Export
+              </button>
+              <button
+                type="button"
+                aria-expanded={exportMenuOpen}
+                aria-haspopup="menu"
+                aria-label="Choose export format"
+                onClick={() => setExportMenuOpen((open) => !open)}
+                className="inline-flex w-9 items-center justify-center text-[var(--secondary)] transition-colors hover:bg-[var(--input)] hover:text-[var(--foreground)]"
+              >
+                <span className="text-xs" aria-hidden>
+                  ▾
+                </span>
+              </button>
+            </div>
+            {exportMenuOpen ? (
+              <div
+                className="absolute right-0 z-20 mt-1 min-w-[180px] overflow-hidden rounded-[6px] border border-[var(--border)] bg-[var(--card)] py-1 shadow-[0_8px_24px_rgba(0,0,0,0.35)]"
+                role="menu"
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleMenuExport("xlsx")}
+                  className={`flex w-full px-3 py-2 text-left text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--input)] ${
+                    exportFormat === "xlsx" ? "bg-[var(--input)]/60" : ""
+                  }`}
+                >
+                  Export as Excel
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleMenuExport("csv")}
+                  className={`flex w-full px-3 py-2 text-left text-sm text-[var(--foreground)] transition-colors hover:bg-[var(--input)] ${
+                    exportFormat === "csv" ? "bg-[var(--input)]/60" : ""
+                  }`}
+                >
+                  Export as CSV
+                </button>
+              </div>
+            ) : null}
+          </div>
           <Link
             href="/submit"
             className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110"
@@ -460,6 +553,7 @@ export function DashboardView() {
           </button>
           <button
             type="button"
+            onClick={handleExportSelected}
             className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-3 text-sm text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
           >
             Export Selected
