@@ -13,6 +13,8 @@ export type UpdateLeadRequestInput = {
   attResponseNotes: string;
   internalNotes: string;
   notesForIcl: string;
+  approvedZipCodes: string;
+  deniedZipCodes: string;
 };
 
 export type UpdateLeadRequestResult = {
@@ -47,7 +49,9 @@ export async function updateLeadRequestAction(
 
   const { data: current, error: fetchError } = await supabase
     .from("lrt_lead_requests")
-    .select("status, att_confirmation_number, att_response_at, internal_notes, notes_for_icl")
+    .select(
+      "status, att_confirmation_number, att_response_at, internal_notes, notes_for_icl, approved_zip_codes, denied_zip_codes",
+    )
     .eq("id", input.requestId)
     .maybeSingle();
 
@@ -71,6 +75,8 @@ export async function updateLeadRequestAction(
       att_response_at: attResponseAt,
       internal_notes: input.internalNotes.trim() || null,
       notes_for_icl: input.notesForIcl.trim() || null,
+      approved_zip_codes: input.approvedZipCodes.trim() || null,
+      denied_zip_codes: input.deniedZipCodes.trim() || null,
       updated_at: now,
     })
     .eq("id", input.requestId);
@@ -98,6 +104,30 @@ export async function updateLeadRequestAction(
         fieldName: "att_confirmation_number",
         oldValue: current.att_confirmation_number,
         newValue: newConfNum,
+      }),
+    );
+  }
+
+  const newApprovedZips = input.approvedZipCodes.trim() || null;
+  if (current.approved_zip_codes !== newApprovedZips) {
+    auditPromises.push(
+      appendAuditLog(supabase, {
+        requestId: input.requestId,
+        fieldName: "approved_zip_codes",
+        oldValue: current.approved_zip_codes,
+        newValue: newApprovedZips,
+      }),
+    );
+  }
+
+  const newDeniedZips = input.deniedZipCodes.trim() || null;
+  if (current.denied_zip_codes !== newDeniedZips) {
+    auditPromises.push(
+      appendAuditLog(supabase, {
+        requestId: input.requestId,
+        fieldName: "denied_zip_codes",
+        oldValue: current.denied_zip_codes,
+        newValue: newDeniedZips,
       }),
     );
   }

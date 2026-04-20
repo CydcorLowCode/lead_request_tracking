@@ -86,16 +86,24 @@ function AuditEntry({ entry, currentUserId }: { entry: AuditRow; currentUserId: 
     description = entry.new_value
       ? `AT&T confirmation # set to ${entry.new_value}`
       : "AT&T confirmation # cleared";
+  } else if (entry.field_name === "approved_zip_codes") {
+    description = entry.new_value
+      ? "Approved zip codes updated"
+      : "Approved zip codes cleared";
+  } else if (entry.field_name === "denied_zip_codes") {
+    description = entry.new_value
+      ? "Denied zip codes updated"
+      : "Denied zip codes cleared";
   } else if (entry.field_name) {
     description = `${entry.field_name} updated`;
   }
 
   return (
-    <div className="flex gap-3 py-3 border-b border-[var(--border)] last:border-b-0">
-      <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[var(--accent)]" />
+    <div className="flex gap-2.5 border-b border-[var(--border)] py-2.5 last:border-b-0">
+      <div className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" aria-hidden />
       <div>
-        <p className="text-sm text-[var(--foreground)]">{description}</p>
-        <p className="mt-0.5 font-mono text-xs text-[var(--muted)]">
+        <p className="text-[12px] leading-relaxed text-[var(--secondary)]">{description}</p>
+        <p className="mt-0.5 font-mono text-[11px] text-[var(--muted)]">
           {actor} · {formatDateTime(entry.changed_at)}
         </p>
       </div>
@@ -131,6 +139,8 @@ export function RequestDetailView({
   const [attConfirmationNumber, setAttConfirmationNumber] = useState(row.att_confirmation_number ?? "");
   const [internalNotes, setInternalNotes] = useState(row.internal_notes ?? "");
   const [notesForIcl, setNotesForIcl] = useState(row.notes_for_icl ?? "");
+  const [approvedZipCodes, setApprovedZipCodes] = useState(row.approved_zip_codes ?? "");
+  const [deniedZipCodes, setDeniedZipCodes] = useState(row.denied_zip_codes ?? "");
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -146,6 +156,8 @@ export function RequestDetailView({
         attResponseNotes: "",
         internalNotes,
         notesForIcl,
+        approvedZipCodes,
+        deniedZipCodes,
       });
       if (result.ok) {
         setSaved(true);
@@ -171,6 +183,8 @@ export function RequestDetailView({
   const zipCodesCopyText = formData?.zip_codes != null && String(formData.zip_codes).trim() !== ""
     ? String(formData.zip_codes)
     : "";
+  const approvedZipCodesCopyText = row.approved_zip_codes?.trim() ?? "";
+  const deniedZipCodesCopyText = row.denied_zip_codes?.trim() ?? "";
   const submitterNotesCopyText = row.notes?.trim() ?? "";
 
   return (
@@ -202,14 +216,14 @@ export function RequestDetailView({
         <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
           <StatusBadge status={status} />
           <SlaChip slaStatus={sla?.status ?? null} hoursRemaining={sla?.hours ?? null} />
-          <LogoutButton />
           <ThemeToggle />
           <Link
             href="/submit"
-            className="inline-flex h-9 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110"
+            className="inline-flex h-9 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)]"
           >
             New Request
           </Link>
+          <LogoutButton />
         </div>
       </div>
 
@@ -217,65 +231,65 @@ export function RequestDetailView({
         {/* Left column */}
         <div className="flex flex-col gap-4">
           {/* Request details */}
-          <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] overflow-hidden">
-            <div className="flex items-center gap-3 border-b border-[var(--border)] px-5 py-3.5">
-              <p className="text-sm font-semibold text-[var(--foreground)]">Request Details</p>
-              <span className="ml-auto inline-flex h-6 items-center rounded-[6px] bg-[var(--input)] px-2.5 font-mono text-xs text-[var(--muted)]">
+          <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
+            <div className="flex items-center gap-2.5 border-b border-[var(--border)] px-[18px] py-3.5">
+              <p className="text-[13px] font-semibold text-[var(--foreground)]">Request Details</p>
+              <span className="ml-auto inline-flex items-center rounded-[20px] bg-[var(--bg4)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)]">
                 {formatLeadTypeLabel(row.lead_type)}
               </span>
             </div>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-5 px-5 py-5 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-x-6 gap-y-[14px] px-[18px] py-[18px] sm:grid-cols-3">
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Owner</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Owner</p>
                 <div className="mt-1 flex items-start gap-2">
-                  <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{ownerDisplay}</p>
+                  <p className="min-w-0 flex-1 text-[13px] text-[var(--foreground)]">{ownerDisplay}</p>
                   <CopyValueButton text={ownerCopyText} ariaLabel="owner" />
                 </div>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Dealer Code</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Dealer Code</p>
                 <div className="mt-1 flex items-start gap-2">
                   <p className="min-w-0 flex-1 font-mono text-sm text-[var(--foreground)]">{row.dealer_code ?? "—"}</p>
                   <CopyValueButton text={dealerCopyText} ariaLabel="dealer code" />
                 </div>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Lead Area</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Lead Area</p>
                 <div className="mt-1 flex items-start gap-2">
                   <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.lead_area_requested}</p>
                   <CopyValueButton text={row.lead_area_requested} ariaLabel="lead area" />
                 </div>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">DMA</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">DMA</p>
                 <div className="mt-1 flex items-start gap-2">
                   <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.dma ?? "—"}</p>
                   <CopyValueButton text={dmaCopyText} ariaLabel="DMA" />
                 </div>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Office</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Office</p>
                 <div className="mt-1 flex items-start gap-2">
                   <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.office ?? "—"}</p>
                   <CopyValueButton text={officeCopyText} ariaLabel="office" />
                 </div>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Date Needed By</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Date Needed By</p>
                 <div className="mt-1 flex items-start gap-2">
                   <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{dateNeededDisplay}</p>
                   <CopyValueButton text={dateNeededCopyText} ariaLabel="date needed by" />
                 </div>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Submitted</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Submitted</p>
                 <div className="mt-1 flex items-start gap-2">
                   <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{formatDateTime(row.created_at)}</p>
                   <CopyValueButton text={submittedCopyText} ariaLabel="submitted date" />
                 </div>
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Company Reserves</p>
+                <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Company Reserves</p>
                 <div className="mt-1 flex items-start gap-2">
                   <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.is_reserve ? "Yes" : "No"}</p>
                   <CopyValueButton text={reservesCopyText} ariaLabel="company reserves" />
@@ -283,7 +297,7 @@ export function RequestDetailView({
               </div>
               {row.headcount != null ? (
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Headcount</p>
+                  <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Headcount</p>
                   <div className="mt-1 flex items-start gap-2">
                     <p className="min-w-0 flex-1 text-sm text-[var(--foreground)]">{row.headcount}</p>
                     <CopyValueButton text={String(row.headcount)} ariaLabel="headcount" />
@@ -292,7 +306,7 @@ export function RequestDetailView({
               ) : null}
               {row.att_confirmation_number ? (
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">AT&T Conf. #</p>
+                  <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">AT&T Conf. #</p>
                   <div className="mt-1 flex items-start gap-2">
                     <p className="min-w-0 flex-1 font-mono text-sm text-[var(--foreground)]">{row.att_confirmation_number}</p>
                     <CopyValueButton text={row.att_confirmation_number} ariaLabel="AT&T confirmation number" />
@@ -302,16 +316,34 @@ export function RequestDetailView({
               {formData?.zip_codes ? (
                 <div className="col-span-2 sm:col-span-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Zip Codes</p>
+                    <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Zip Codes</p>
                     <CopyValueButton text={zipCodesCopyText} ariaLabel="zip codes" />
                   </div>
                   <p className="mt-1 font-mono text-sm text-[var(--foreground)]">{String(formData.zip_codes)}</p>
                 </div>
               ) : null}
+              {row.approved_zip_codes?.trim() ? (
+                <div className="col-span-2 sm:col-span-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Approved Zip Codes</p>
+                    <CopyValueButton text={approvedZipCodesCopyText} ariaLabel="approved zip codes" />
+                  </div>
+                  <p className="mt-1 font-mono text-sm text-[var(--foreground)]">{row.approved_zip_codes}</p>
+                </div>
+              ) : null}
+              {row.denied_zip_codes?.trim() ? (
+                <div className="col-span-2 sm:col-span-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Denied Zip Codes</p>
+                    <CopyValueButton text={deniedZipCodesCopyText} ariaLabel="denied zip codes" />
+                  </div>
+                  <p className="mt-1 font-mono text-sm text-[var(--foreground)]">{row.denied_zip_codes}</p>
+                </div>
+              ) : null}
               {row.notes ? (
                 <div className="col-span-2 sm:col-span-3">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Submitter Notes</p>
+                    <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Submitter Notes</p>
                     <CopyValueButton text={submitterNotesCopyText} ariaLabel="submitter notes" />
                   </div>
                   <p className="mt-1 text-sm text-[var(--foreground)]">{row.notes}</p>
@@ -322,11 +354,11 @@ export function RequestDetailView({
 
           {/* Update form — territory team only */}
           {isTerritoryTeam ? (
-            <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] overflow-hidden">
-              <div className="border-b border-[var(--border)] px-5 py-3.5">
-                <p className="text-sm font-semibold text-[var(--foreground)]">Update Request</p>
+            <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
+              <div className="border-b border-[var(--border)] px-[18px] py-3.5">
+                <p className="text-[13px] font-semibold text-[var(--foreground)]">Update Request</p>
               </div>
-              <div className="flex flex-col gap-4 px-5 py-5">
+              <div className="flex flex-col gap-4 px-[18px] py-[18px]">
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-xs font-medium text-[var(--secondary)]">Status</label>
@@ -351,6 +383,35 @@ export function RequestDetailView({
                       onChange={(e) => setAttConfirmationNumber(e.target.value)}
                       placeholder="Paste from AT&T email…"
                       className="h-10 rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 font-mono text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--border-hover)]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-medium text-[var(--secondary)]">Approved Zip Codes</label>
+                      <CopyValueButton text={approvedZipCodes} ariaLabel="approved zip codes" />
+                    </div>
+                    <textarea
+                      value={approvedZipCodes}
+                      onChange={(e) => setApprovedZipCodes(e.target.value)}
+                      placeholder="Space or comma-separated zip codes approved by AT&T…"
+                      rows={3}
+                      className="resize-y rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-2 font-mono text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--border-hover)]"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="text-xs font-medium text-[var(--secondary)]">Denied Zip Codes</label>
+                      <CopyValueButton text={deniedZipCodes} ariaLabel="denied zip codes" />
+                    </div>
+                    <textarea
+                      value={deniedZipCodes}
+                      onChange={(e) => setDeniedZipCodes(e.target.value)}
+                      placeholder="Space or comma-separated zip codes denied by AT&T…"
+                      rows={3}
+                      className="resize-y rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-2 font-mono text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--border-hover)]"
                     />
                   </div>
                 </div>
@@ -404,6 +465,8 @@ export function RequestDetailView({
                       setAttConfirmationNumber(row.att_confirmation_number ?? "");
                       setInternalNotes(row.internal_notes ?? "");
                       setNotesForIcl(row.notes_for_icl ?? "");
+                      setApprovedZipCodes(row.approved_zip_codes ?? "");
+                      setDeniedZipCodes(row.denied_zip_codes ?? "");
                       setSaveError(null);
                       setSaved(false);
                     }}
@@ -415,7 +478,7 @@ export function RequestDetailView({
                     type="button"
                     onClick={handleSave}
                     disabled={isPending}
-                    className="inline-flex h-9 items-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110 disabled:opacity-50"
+                    className="inline-flex h-9 items-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)] disabled:opacity-50"
                   >
                     {isPending ? "Saving…" : "Save Changes"}
                   </button>
@@ -427,7 +490,7 @@ export function RequestDetailView({
             row.notes_for_icl ? (
               <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-5 py-4">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] uppercase tracking-[0.06em] text-[var(--muted)]">Notes from Territory Team</p>
+                  <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Notes from Territory Team</p>
                   <CopyValueButton text={row.notes_for_icl} ariaLabel="notes from territory team" />
                 </div>
                 <p className="mt-2 text-sm text-[var(--foreground)]">{row.notes_for_icl}</p>
@@ -437,11 +500,11 @@ export function RequestDetailView({
         </div>
 
         {/* Right column — audit log */}
-        <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] overflow-hidden self-start">
-          <div className="border-b border-[var(--border)] px-5 py-3.5">
-            <p className="text-sm font-semibold text-[var(--foreground)]">Activity Log</p>
+        <div className="self-start overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
+          <div className="border-b border-[var(--border)] px-[18px] py-3.5">
+            <p className="text-[13px] font-semibold text-[var(--foreground)]">Activity Log</p>
           </div>
-          <div className="px-5 py-2">
+          <div className="px-[18px] py-3.5">
             {auditLog.length === 0 ? (
               <p className="py-6 text-center text-sm text-[var(--muted)]">No activity yet.</p>
             ) : (

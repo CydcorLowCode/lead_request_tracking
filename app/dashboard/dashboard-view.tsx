@@ -57,6 +57,7 @@ export function DashboardView() {
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("xlsx");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [activeFilterChip, setActiveFilterChip] = useState<string | null>("All Status");
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const isMountedRef = useRef(true);
 
@@ -283,12 +284,11 @@ export function DashboardView() {
   return (
     <main className="mx-auto flex w-full max-w-[1220px] flex-col gap-6 px-6 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div> 
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">Dashboard</h1>
-          <p className="mt-1 text-sm text-[var(--secondary)]">AT&amp;T Residential</p>
+        <div>
+          <h1 className="text-[20px] font-semibold tracking-tight text-[var(--foreground)]">Dashboard</h1>
+          <p className="mt-1 text-[13px] text-[var(--muted)]">AT&amp;T Residential</p>
         </div>
         <div className="flex items-center gap-2">
-          <LogoutButton />
           <ThemeToggle />
           <div ref={exportMenuRef} className="relative">
             <div className="inline-flex h-10 overflow-hidden rounded-[6px] border border-[var(--border)] bg-transparent">
@@ -342,89 +342,122 @@ export function DashboardView() {
           </div>
           <Link
             href="/submit"
-            className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)]"
           >
             New Request
           </Link>
+          <LogoutButton />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <button
           type="button"
           onClick={() => setSlaFilter((current) => (current === "overdue" ? "all" : "overdue"))}
-          className={`rounded-[10px] border bg-[var(--card)] p-4 text-left transition-colors ${
-            slaFilter === "overdue"
-              ? "border-[#ef444480]"
-              : "border-[var(--border)] hover:border-[var(--border-hover)]"
+          className={`flex items-center gap-2.5 rounded-[6px] border border-[var(--border)] bg-[var(--card)] px-[14px] py-2.5 text-left transition-colors ${
+            slaFilter === "overdue" ? "ring-1 ring-[var(--status-red)]/40" : "hover:border-[var(--border-hover)]"
           }`}
         >
-          <p className="text-xs uppercase tracking-[0.08em] text-[var(--secondary)]">Overdue</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--status-red)]">{summary.overdue}</p>
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--status-red)]" aria-hidden />
+          <span className="flex-1 text-[12px] text-[var(--secondary)]">Overdue</span>
+          <span className="text-[18px] font-medium text-[var(--status-red)]">{summary.overdue}</span>
         </button>
         <button
           type="button"
           onClick={() => setSlaFilter((current) => (current === "at_risk" ? "all" : "at_risk"))}
-          className={`rounded-[10px] border bg-[var(--card)] p-4 text-left transition-colors ${
-            slaFilter === "at_risk"
-              ? "border-[#f59e0b80]"
-              : "border-[var(--border)] hover:border-[var(--border-hover)]"
+          className={`flex items-center gap-2.5 rounded-[6px] border border-[var(--border)] bg-[var(--card)] px-[14px] py-2.5 text-left transition-colors ${
+            slaFilter === "at_risk" ? "ring-1 ring-[var(--status-amber)]/40" : "hover:border-[var(--border-hover)]"
           }`}
         >
-          <p className="text-xs uppercase tracking-[0.08em] text-[var(--secondary)]">At Risk</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--status-amber)]">{summary.atRisk}</p>
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--status-amber)]" aria-hidden />
+          <span className="flex-1 text-[12px] text-[var(--secondary)]">At Risk</span>
+          <span className="text-[18px] font-medium text-[var(--status-amber)]">{summary.atRisk}</span>
         </button>
         <button
           type="button"
           onClick={() => setSlaFilter((current) => (current === "on_track" ? "all" : "on_track"))}
-          className={`rounded-[10px] border bg-[var(--card)] p-4 text-left transition-colors ${
-            slaFilter === "on_track"
-              ? "border-[#22c55e80]"
-              : "border-[var(--border)] hover:border-[var(--border-hover)]"
+          className={`flex items-center gap-2.5 rounded-[6px] border border-[var(--border)] bg-[var(--card)] px-[14px] py-2.5 text-left transition-colors ${
+            slaFilter === "on_track" ? "ring-1 ring-[var(--status-green)]/40" : "hover:border-[var(--border-hover)]"
           }`}
         >
-          <p className="text-xs uppercase tracking-[0.08em] text-[var(--secondary)]">On Track</p>
-          <p className="mt-2 text-2xl font-semibold text-[var(--status-green)]">{summary.onTrack}</p>
+          <span className="h-2 w-2 shrink-0 rounded-full bg-[var(--status-green)]" aria-hidden />
+          <span className="flex-1 text-[12px] text-[var(--secondary)]">On Track</span>
+          <span className="text-[18px] font-medium text-[var(--status-green)]">{summary.onTrack}</span>
         </button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-3">
-        <input
-          value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
-          placeholder="Search requests..."
-          className="h-10 w-full max-w-[320px] rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--border-hover)]"
-        />
-        {FILTER_CHIPS.map((chip) => (
-          <button
-            key={chip}
-            type="button"
-            className="inline-flex h-8 items-center rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 text-xs font-medium text-[var(--secondary)]"
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="flex min-h-10 flex-1 max-w-[320px] items-center gap-2 rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-[7px]">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="shrink-0 text-[var(--muted)]"
+            aria-hidden
           >
-            {chip}
-          </button>
-        ))}
+            <circle cx="6.5" cy="6.5" r="4" />
+            <path d="M11 11l3 3" />
+          </svg>
+          <input
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search dealer code, location, confirmation ID…"
+            className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
+          />
+        </div>
+        {FILTER_CHIPS.map((chip) => {
+          const isActive = activeFilterChip === chip;
+          return (
+            <button
+              key={chip}
+              type="button"
+              onClick={() => setActiveFilterChip(chip)}
+              className={`inline-flex min-h-8 items-center rounded-[6px] border px-3 py-[7px] text-[12px] transition-colors ${
+                isActive
+                  ? "border-[rgba(79,124,255,0.3)] bg-[var(--blue-bg)] text-[var(--accent)]"
+                  : "border-[var(--border)] bg-[var(--input)] text-[var(--secondary)] hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              {chip}
+            </button>
+          );
+        })}
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
         <table className="w-full border-collapse">
           <thead>
-            <tr className="border-b border-[var(--border)] text-left text-[11px] uppercase tracking-[0.08em] text-[var(--secondary)]">
-              <th className="w-10 px-4 py-3">
+            <tr className="border-b border-[var(--border)]">
+              <th className="w-9 py-[10px] pl-[14px] pr-0 text-left">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  className="h-4 w-4 rounded-[4px] border border-[var(--border)] bg-[var(--input)]"
+                  className="h-[14px] w-[14px] accent-[var(--accent)]"
                 />
               </th>
-              <th className="px-4 py-3">Owner / Dealer</th>
-              <th className="px-4 py-3">Lead Type</th>
-              <th className="px-4 py-3">Location</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">SLA</th>
-              <th className="px-4 py-3">Submitted</th>
-              <th className="w-10 px-4 py-3" />
+              <th className="px-[14px] py-[10px] text-left text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--muted)]">
+                Owner / Dealer
+              </th>
+              <th className="px-[14px] py-[10px] text-left text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--muted)]">
+                Lead Type
+              </th>
+              <th className="px-[14px] py-[10px] text-left text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--muted)]">
+                Location / Zip
+              </th>
+              <th className="px-[14px] py-[10px] text-left text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--muted)]">
+                Status
+              </th>
+              <th className="px-[14px] py-[10px] text-left text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--muted)]">
+                SLA
+              </th>
+              <th className="px-[14px] py-[10px] text-left text-[11px] font-medium uppercase tracking-[0.05em] text-[var(--muted)]">
+                Submitted
+              </th>
+              <th className="w-8 px-[14px] py-[10px]" />
             </tr>
           </thead>
           <tbody>
@@ -434,30 +467,30 @@ export function DashboardView() {
                     key={`skeleton-${index}`}
                     className={index < 6 ? "border-b border-[var(--border)]" : undefined}
                   >
-                    <td className="px-4 py-3">
-                      <Skeleton className="h-4 w-4 rounded-[4px]" />
+                    <td className="py-[11px] pl-[14px] pr-0">
+                      <Skeleton className="h-[14px] w-[14px] rounded-[2px]" />
                     </td>
-                    <td className="px-4 py-3">
-                      <Skeleton className="mb-1 h-4 w-36 rounded-[6px]" />
-                      <Skeleton className="h-3 w-20 rounded-[6px]" />
+                    <td className="px-[14px] py-[11px]">
+                      <Skeleton className="mb-1 h-4 w-36 rounded-[4px]" />
+                      <Skeleton className="h-3 w-20 rounded-[4px]" />
                     </td>
-                    <td className="px-4 py-3">
-                      <Skeleton className="h-7 w-28 rounded-[6px]" />
+                    <td className="px-[14px] py-[11px]">
+                      <Skeleton className="h-5 w-28 rounded-[4px]" />
                     </td>
-                    <td className="px-4 py-3">
-                      <Skeleton className="h-4 w-40 rounded-[6px]" />
+                    <td className="px-[14px] py-[11px]">
+                      <Skeleton className="h-4 w-40 rounded-[4px]" />
                     </td>
-                    <td className="px-4 py-3">
-                      <Skeleton className="h-7 w-28 rounded-[6px]" />
+                    <td className="px-[14px] py-[11px]">
+                      <Skeleton className="h-5 w-28 rounded-[999px]" />
                     </td>
-                    <td className="px-4 py-3">
-                      <Skeleton className="h-7 w-24 rounded-[6px]" />
+                    <td className="px-[14px] py-[11px]">
+                      <Skeleton className="h-5 w-24 rounded-[999px]" />
                     </td>
-                    <td className="px-4 py-3">
-                      <Skeleton className="h-4 w-14 rounded-[6px]" />
+                    <td className="px-[14px] py-[11px]">
+                      <Skeleton className="h-3 w-14 rounded-[4px]" />
                     </td>
-                    <td className="px-4 py-3">
-                      <Skeleton className="h-4 w-4 rounded-[6px]" />
+                    <td className="px-[14px] py-[11px]">
+                      <Skeleton className="h-3.5 w-3.5 rounded-[2px]" />
                     </td>
                   </tr>
                 ))
@@ -466,8 +499,8 @@ export function DashboardView() {
             {!loading && !error && filteredRows.length === 0 ? (
               <tr>
                 <td colSpan={8} className="px-6 py-12 text-center">
-                  <p className="text-sm font-medium text-[var(--foreground)]">No requests found</p>
-                  <p className="mt-1 text-sm text-[var(--secondary)]">
+                  <p className="text-[15px] font-medium text-[var(--secondary)]">No requests found</p>
+                  <p className="mt-1 text-[13px] text-[var(--muted)]">
                     Try adjusting search or SLA filters.
                   </p>
                 </td>
@@ -480,43 +513,57 @@ export function DashboardView() {
                   const selected = selectedIds.has(row.id);
                   return (
                     <tr
-  key={row.id}
-  onClick={() => router.push(`/requests/${row.id}`)}
-  className={`cursor-pointer transition-colors hover:bg-[var(--input)] ${
-    index < filteredRows.length - 1 ? "border-b border-[var(--border)]" : ""
-  }`}
->
-                      <td className="px-4 py-3" onClick={(event) => event.stopPropagation()}>
+                      key={row.id}
+                      onClick={() => router.push(`/requests/${row.id}`)}
+                      className={`cursor-pointer transition-colors hover:bg-[var(--input)] ${
+                        index < filteredRows.length - 1 ? "border-b border-[var(--border)]" : ""
+                      }`}
+                    >
+                      <td className="py-[11px] pl-[14px] pr-0" onClick={(event) => event.stopPropagation()}>
                         <input
                           type="checkbox"
                           checked={selected}
                           onChange={() => toggleOne(row.id)}
-                          className="h-4 w-4 rounded-[4px] border border-[var(--border)] bg-[var(--input)]"
+                          className="h-[14px] w-[14px] accent-[var(--accent)]"
                         />
                       </td>
-                      <td className="px-4 py-3">
-                        <p className="text-sm text-[var(--foreground)]">{owner?.full_name ?? owner?.email ?? "Unknown Owner"}</p>
-                        <p className="font-mono text-xs text-[var(--muted)]">{row.dealer_code ?? "—"}</p>
+                      <td className="px-[14px] py-[11px]">
+                        <p className="text-[13px] font-medium text-[var(--foreground)]">
+                          {owner?.full_name ?? owner?.email ?? "Unknown Owner"}
+                        </p>
+                        <p className="font-mono text-[11px] text-[var(--muted)]">{row.dealer_code ?? "—"}</p>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className="inline-flex min-h-7 items-center rounded-[6px] bg-[var(--input)] px-3 py-1.5 font-mono text-xs leading-snug text-[var(--foreground)]">
-                          {formatLeadType(row.lead_type)}
-                        </span>
+                      <td className="px-[14px] py-[11px]">
+                        <span className="lrt-lead-type">{formatLeadType(row.lead_type)}</span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-[var(--foreground)]">{row.lead_area_requested}</td>
-                      <td className="px-4 py-3">
+                      <td className="whitespace-nowrap px-[14px] py-[11px] text-[13px] text-[var(--secondary)]">
+                        {row.lead_area_requested}
+                      </td>
+                      <td className="px-[14px] py-[11px]">
                         <StatusBadge status={status} />
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-[14px] py-[11px]">
                         <SlaChip
                           slaStatus={sla?.status ?? null}
                           hoursRemaining={sla?.hours ?? null}
                         />
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-[var(--muted)]">
+                      <td className="whitespace-nowrap px-[14px] py-[11px] font-mono text-[11px] text-[var(--muted)]">
                         {formatShortDate(row.created_at)}
                       </td>
-                      <td className="px-4 py-3 text-right text-lg text-[var(--muted)]">›</td>
+                      <td className="px-[14px] py-[11px] text-[var(--muted)]">
+                        <svg
+                          width="14"
+                          height="14"
+                          viewBox="0 0 16 16"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          aria-hidden
+                        >
+                          <path d="M6 4l4 4-4 4" />
+                        </svg>
+                      </td>
                     </tr>
                   );
                 })
@@ -532,11 +579,13 @@ export function DashboardView() {
       ) : null}
 
       <div
-        className={`sticky bottom-4 z-10 mt-1 flex items-center justify-between gap-3 rounded-[10px] border border-[var(--border)] bg-[var(--input)] px-4 py-3 shadow-[0_-10px_30px_rgba(0,0,0,0.35)] transition-all ${
+        className={`sticky bottom-4 z-10 mt-3 flex items-center gap-2.5 rounded-[10px] border border-[var(--border-hover)] bg-[var(--input)] px-4 py-3 shadow-[0_-8px_24px_rgba(0,0,0,0.4)] transition-all ${
           selectedCount > 0 ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <p className="text-sm text-[var(--foreground)]">{selectedCount} requests selected</p>
+        <p className="flex-1 text-[13px] font-medium text-[var(--foreground)]">
+          <span className="text-[var(--accent)]">{selectedCount}</span> requests selected
+        </p>
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -612,7 +661,7 @@ export function DashboardView() {
                 type="button"
                 onClick={() => void handleBulkStatusConfirm()}
                 disabled={bulkSubmitting}
-                className="inline-flex h-9 items-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-3 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
+                className="inline-flex h-9 items-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-3 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {bulkSubmitting ? "Updating..." : "Confirm"}
               </button>

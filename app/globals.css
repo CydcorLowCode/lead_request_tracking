@@ -5,11 +5,14 @@
   --card: #ffffff;
   --input: #f0f1f5;
   --accent: #4f7cff;
+  --accent2: #3d6aed;
+  --accent-glow: rgba(79, 124, 255, 0.15);
   --foreground: #0f1117;
   --secondary: #5a5e72;
   --muted: #8b8fa8;
   --border: rgba(0, 0, 0, 0.08);
   --border-hover: rgba(0, 0, 0, 0.15);
+  --bg4: #e8eaef;
   --status-green: #16a34a;
   --status-amber: #d97706;
   --status-red: #dc2626;
@@ -17,6 +20,13 @@
   --status-purple: #9333ea;
   --radius-card: 10px;
   --radius-control: 6px;
+  --green: #22c55e;
+  --green-bg: rgba(34, 197, 94, 0.1);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245, 158, 11, 0.1);
+  --red: #ef4444;
+  --red-bg: rgba(239, 68, 68, 0.1);
+  --blue-bg: rgba(79, 124, 255, 0.1);
 }
 
 .dark {
@@ -24,16 +34,26 @@
   --card: #161920;
   --input: #1d2029;
   --accent: #4f7cff;
+  --accent2: #3d6aed;
+  --accent-glow: rgba(79, 124, 255, 0.15);
   --foreground: #f0f1f5;
   --secondary: #8b8fa8;
   --muted: #5a5e72;
   --border: rgba(255, 255, 255, 0.07);
   --border-hover: rgba(255, 255, 255, 0.12);
+  --bg4: #242834;
   --status-green: #22c55e;
   --status-amber: #f59e0b;
   --status-red: #ef4444;
   --status-blue: #4f7cff;
   --status-purple: #a855f7;
+  --green: #22c55e;
+  --green-bg: rgba(34, 197, 94, 0.1);
+  --amber: #f59e0b;
+  --amber-bg: rgba(245, 158, 11, 0.1);
+  --red: #ef4444;
+  --red-bg: rgba(239, 68, 68, 0.1);
+  --blue-bg: rgba(79, 124, 255, 0.1);
 }
 
 @theme inline {
@@ -54,4 +74,103 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-dm-sans), sans-serif;
+  font-size: 14px;
+}
+
+@layer components {
+  /* Status pills — matches lrt-prototype badge + dot */
+  .lrt-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  .lrt-badge-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .lrt-badge-new {
+    background: var(--bg4);
+    color: var(--secondary);
+  }
+
+  .lrt-badge-submitted {
+    background: var(--blue-bg);
+    color: var(--accent);
+  }
+
+  .lrt-badge-received {
+    background: rgba(168, 85, 247, 0.1);
+    color: var(--status-purple);
+  }
+
+  .lrt-badge-complete {
+    background: var(--green-bg);
+    color: var(--status-green);
+  }
+
+  .lrt-badge-declined {
+    background: var(--red-bg);
+    color: var(--status-red);
+  }
+
+  .lrt-badge-amber {
+    background: var(--amber-bg);
+    color: var(--amber);
+  }
+
+  .lrt-badge-pulled {
+    background: var(--amber-bg);
+    color: var(--amber);
+  }
+
+  /* SLA chips — DM Mono, pill */
+  .lrt-sla-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--font-dm-mono), ui-monospace, monospace;
+  }
+
+  .lrt-sla-ok {
+    background: var(--green-bg);
+    color: var(--status-green);
+  }
+
+  .lrt-sla-warn {
+    background: var(--amber-bg);
+    color: var(--status-amber);
+  }
+
+  .lrt-sla-over {
+    background: var(--red-bg);
+    color: var(--status-red);
+  }
+
+  .lrt-sla-done {
+    background: var(--bg4);
+    color: var(--muted);
+  }
+
+  /* Lead type cell — mono tag */
+  .lrt-lead-type {
+    font-family: var(--font-dm-mono), ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg4);
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
 }

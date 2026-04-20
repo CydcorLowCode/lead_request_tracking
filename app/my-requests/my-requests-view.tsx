@@ -131,23 +131,23 @@ export function MyRequestsView() {
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--foreground)]">
+          <h1 className="text-[20px] font-semibold tracking-tight text-[var(--foreground)]">
             My Requests
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/submit"
-            className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)]"
           >
             New Request
           </Link>
-          <LogoutButton />
           <ThemeToggle />
+          <LogoutButton />
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="mb-5 flex gap-0 border-b border-[var(--border)]">
         {TAB_CONFIG.map((tab) => {
           const count = groupedCounts[tab.key];
           const isActive = tab.key === activeTab;
@@ -156,16 +156,18 @@ export function MyRequestsView() {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key)}
-              className={`inline-flex h-9 items-center gap-2 rounded-[6px] border px-3 text-sm transition-colors ${
+              className={`relative -mb-px inline-flex items-center gap-1.5 border-b-2 px-4 py-2.5 text-[13px] transition-colors ${
                 isActive
-                  ? "border-[var(--border-hover)] bg-[var(--input)] text-[var(--foreground)]"
-                  : "border-[var(--border)] bg-[var(--card)] text-[var(--secondary)] hover:border-[var(--border-hover)]"
+                  ? "border-[var(--accent)] font-medium text-[var(--accent)]"
+                  : "border-transparent font-normal text-[var(--muted)] hover:text-[var(--secondary)]"
               }`}
             >
               <span>{tab.label}</span>
-              <span className="rounded-[6px] bg-[var(--input)] px-2 py-0.5 font-mono text-xs text-[var(--secondary)]">
-                {count}
-              </span>
+              {tab.key === "active" ? (
+                <span className="rounded-[10px] bg-[var(--bg4)] px-1.5 py-px text-[10px] font-semibold text-[var(--muted)]">
+                  {count}
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -196,7 +198,7 @@ export function MyRequestsView() {
           </p>
           <Link
             href="/submit"
-            className="mt-5 inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:brightness-110"
+            className="mt-5 inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)]"
           >
             New Request
           </Link>
@@ -204,7 +206,7 @@ export function MyRequestsView() {
       ) : null}
 
       {!loading && !error && filteredRows.length > 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredRows.map((row) => {
             const status = toLeadRequestStatus(row.status);
             const sla = evaluateSlaStatus({
@@ -213,30 +215,34 @@ export function MyRequestsView() {
               warningHours: getWarningHoursForRequest(row, warningLookup),
             });
 
-            const accentClass =
-              sla?.status === "overdue"
-                ? "bg-[var(--status-red)]"
-                : sla?.status === "at_risk"
-                  ? "bg-[var(--status-amber)]"
-                  : "bg-transparent";
+            const overdue = sla?.status === "overdue";
 
             return (
               <button
                 key={row.id}
                 type="button"
                 onClick={() => router.push(`/requests/${row.id}`)}
-                className="relative block w-full overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)] text-left transition-colors hover:border-[var(--border-hover)]"
+                className={`relative flex w-full flex-wrap items-center gap-3 overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-[18px] py-3.5 text-left transition-colors hover:border-[var(--border-hover)] lg:flex-nowrap lg:gap-3.5 ${
+                  overdue ? "border-l-[3px] border-l-[var(--status-red)] pl-[15px]" : ""
+                }`}
               >
-                <span className={`absolute inset-y-0 left-0 w-1 ${accentClass}`} aria-hidden />
-                <div className="grid grid-cols-1 gap-3 px-5 py-4 lg:grid-cols-[150px_1fr_auto_auto_88px] lg:items-center lg:gap-4">
-                  <span className="font-mono text-sm text-[var(--accent)]">{formatLeadType(row.lead_type)}</span>
-                  <span className="truncate text-sm text-[var(--foreground)]">{row.lead_area_requested}</span>
+                <span className="w-full shrink-0 font-mono text-[11px] text-[var(--accent)] lg:w-[130px]">
+                  {formatLeadType(row.lead_type)}
+                </span>
+                <span className="min-w-0 flex-1 text-[13px] text-[var(--foreground)]">{row.lead_area_requested}</span>
+                <span className="shrink-0">
                   <StatusBadge status={status} />
-                  <SlaChip slaStatus={sla?.status ?? null} hoursRemaining={sla?.hours ?? null} />
-                  <span className="justify-self-start font-mono text-xs text-[var(--muted)] lg:justify-self-end">
-                    {formatShortDate(row.created_at)}
-                  </span>
-                </div>
+                </span>
+                <span className="shrink-0">
+                  <SlaChip
+                    slaStatus={sla?.status ?? null}
+                    hoursRemaining={sla?.hours ?? null}
+                    compact
+                  />
+                </span>
+                <span className="shrink-0 font-mono text-[11px] text-[var(--muted)] lg:ml-auto lg:w-[88px] lg:text-right">
+                  {formatShortDate(row.created_at)}
+                </span>
               </button>
             );
           })}

@@ -52,56 +52,56 @@ type SubmitSuccessState = {
 };
 
 const STATES = [
-  "AL",
-  "AK",
-  "AZ",
-  "AR",
-  "CA",
-  "CO",
-  "CT",
-  "DE",
-  "FL",
-  "GA",
-  "HI",
-  "ID",
-  "IL",
-  "IN",
-  "IA",
-  "KS",
-  "KY",
-  "LA",
-  "ME",
-  "MD",
-  "MA",
-  "MI",
-  "MN",
-  "MS",
-  "MO",
-  "MT",
-  "NE",
-  "NV",
-  "NH",
-  "NJ",
-  "NM",
-  "NY",
-  "NC",
-  "ND",
-  "OH",
-  "OK",
-  "OR",
-  "PA",
-  "RI",
-  "SC",
-  "SD",
-  "TN",
-  "TX",
-  "UT",
-  "VT",
-  "VA",
-  "WA",
-  "WV",
-  "WI",
-  "WY",
+  "Alabama",
+  "Alaska",
+  "Arizona",
+  "Arkansas",
+  "California",
+  "Colorado",
+  "Connecticut",
+  "Delaware",
+  "Florida",
+  "Georgia",
+  "Hawaii",
+  "Idaho",
+  "Illinois",
+  "Indiana",
+  "Iowa",
+  "Kansas",
+  "Kentucky",
+  "Louisiana",
+  "Maine",
+  "Maryland",
+  "Massachusetts",
+  "Michigan",
+  "Minnesota",
+  "Mississippi",
+  "Missouri",
+  "Montana",
+  "Nebraska",
+  "Nevada",
+  "New Hampshire",
+  "New Jersey",
+  "New Mexico",
+  "New York",
+  "North Carolina",
+  "North Dakota",
+  "Ohio",
+  "Oklahoma",
+  "Oregon",
+  "Pennsylvania",
+  "Rhode Island",
+  "South Carolina",
+  "South Dakota",
+  "Tennessee",
+  "Texas",
+  "Utah",
+  "Vermont",
+  "Virginia",
+  "Washington",
+  "West Virginia",
+  "Wisconsin",
+  "Wyoming",
 ];
 
 const ZIP_REQUIRED_LEAD_TYPES = new Set([
@@ -111,8 +111,8 @@ const ZIP_REQUIRED_LEAD_TYPES = new Set([
 
 function SectionHeading({ title }: { title: string }) {
   return (
-    <div className="mb-4">
-      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--secondary)]">
+    <div className="mb-6">
+      <div className="mb-3.5 pb-2 text-[11px] font-medium uppercase tracking-[1px] text-[var(--muted)]">
         {title}
       </div>
       <div className="h-px w-full bg-[var(--border)]" />
@@ -359,22 +359,20 @@ export function SubmitForm({
     <div className="mx-auto w-full max-w-[680px] space-y-4">
       <div className="flex items-end justify-between rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-5 py-4">
         <div>
-          <h2 className="text-lg font-semibold text-[var(--foreground)]">
-            New Lead Request
-          </h2>
+          <h2 className="text-[15px] font-semibold text-[var(--foreground)]">New Lead Request</h2>
         </div>
         <div className="flex items-center gap-2">
-          <p className="text-sm text-[var(--secondary)]">{campaignName}</p>
+          <p className="text-[12px] text-[var(--muted)]">{campaignName}</p>
           <ThemeToggle />
         </div>
       </div>
 
       <Card>
-        <CardContent className="space-y-8">
+        <CardContent className="space-y-8 p-7">
           {submitSuccess ? (
             <div className="flex flex-col items-center gap-6 py-4 text-center">
               <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--status-green)] text-white shadow-sm"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--green-bg)] text-[var(--status-green)]"
                 aria-hidden="true"
               >
                 <svg
@@ -385,7 +383,7 @@ export function SubmitForm({
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="h-8 w-8"
+                  className="h-5 w-5"
                 >
                   <path d="M20 6 9 17l-5-5" />
                 </svg>
@@ -405,7 +403,7 @@ export function SubmitForm({
                   href={submitSuccess.msFormUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center rounded-[var(--radius-control)] border border-[var(--accent)] bg-[var(--accent)] px-6 py-3.5 text-base font-semibold text-[var(--foreground)] transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  className="inline-flex w-full items-center justify-center rounded-[var(--radius-control)] border border-[var(--accent)] bg-[var(--accent)] px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-[var(--accent2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
                 >
                   Open AT&amp;T Form →
                 </a>

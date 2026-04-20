@@ -135,6 +135,20 @@ function setIfNonEmpty(url: URL, key: string, value: string | null | undefined) 
   url.searchParams.set(key, t);
 }
 
+/** MS Forms expect full state names; accept legacy 2-letter codes or full names. */
+function resolveStateForMsForm(raw: string): string | undefined {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return undefined;
+  if (trimmed.length === 2) {
+    const fromCode = STATE_CODE_TO_NAME[trimmed.toUpperCase()];
+    if (fromCode) return fromCode;
+  }
+  const lower = trimmed.toLowerCase();
+  return Object.values(STATE_CODE_TO_NAME).find(
+    (name) => name.toLowerCase() === lower,
+  );
+}
+
 export function buildMsFormUrl(input: BuildMsFormUrlInput): string {
   const url = new URL(MS_FORMS_BASE);
 
@@ -172,8 +186,7 @@ export function buildMsFormUrl(input: BuildMsFormUrlInput): string {
 
   url.searchParams.set(F.headcount, "10");
 
-  const stateCode = input.state.trim().toUpperCase();
-  const stateFull = STATE_CODE_TO_NAME[stateCode];
+  const stateFull = resolveStateForMsForm(input.state);
   setIfNonEmpty(url, F.state, stateFull);
 
   setIfNonEmpty(url, F.dma, input.dma);
