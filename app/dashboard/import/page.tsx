@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 
 import { getSessionContext } from "@/lib/auth/get-session-user";
-import { DashboardView } from "./dashboard-view";
 
-export default async function DashboardPage() {
+import { AttImportView } from "./att-import-view";
+
+export default async function AttImportPage() {
   const ctx = await getSessionContext();
   if (!ctx) {
     redirect("/login");
@@ -12,5 +13,5 @@ export default async function DashboardPage() {
     redirect("/my-requests");
   }
 
-  return <DashboardView showAttImportLink={ctx.isTerritoryTeam} />;
+  return <AttImportView />;
 }

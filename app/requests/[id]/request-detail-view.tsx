@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
@@ -133,6 +134,7 @@ export function RequestDetailView({
   });
 
   const isTerritoryTeam = currentProfile.role === "territory_team";
+  const router = useRouter();
 
   // Form state
   const [formStatus, setFormStatus] = useState(row.status);
@@ -161,6 +163,7 @@ export function RequestDetailView({
       });
       if (result.ok) {
         setSaved(true);
+        router.refresh();
       } else {
         setSaveError(result.message ?? "Something went wrong.");
       }

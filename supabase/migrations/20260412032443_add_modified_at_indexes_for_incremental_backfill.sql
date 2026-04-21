@@ -1,0 +1,11 @@
+CREATE INDEX IF NOT EXISTS idx_parent_leads_modified_at ON parent_leads (modified_at);
+CREATE INDEX IF NOT EXISTS idx_aci_modified_at ON aci (modified_at);
+CREATE INDEX IF NOT EXISTS idx_program_records_modified_at ON program_records (modified_at);
+CREATE INDEX IF NOT EXISTS idx_child_leads_modified_at ON child_leads (modified_at);
+CREATE INDEX IF NOT EXISTS idx_notes_modified_at ON notes (modified_at);
+CREATE INDEX IF NOT EXISTS idx_route_stops_modified_at ON route_stops (modified_at);
+CREATE INDEX IF NOT EXISTS idx_calendar_events_modified_at ON calendar_events (modified_at);
+CREATE INDEX IF NOT EXISTS idx_sales_agent_statistics_modified_at ON sales_agent_statistics (modified_at);
+CREATE INDEX IF NOT EXISTS idx_orders_modified_at ON orders (modified_at);
+CREATE INDEX IF NOT EXISTS idx_products_modified_at ON products (modified_at);
+CREATE INDEX IF NOT EXISTS idx_surveys_modified_at ON surveys (modified_at);;

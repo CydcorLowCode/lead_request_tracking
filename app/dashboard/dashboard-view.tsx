@@ -41,7 +41,7 @@ const STATUS_OPTIONS: Array<{ value: LeadRequestStatus; label: string }> = [
   { value: "leads_pulled_back", label: "Leads Pulled Back by Client" },
 ];
 
-export function DashboardView() {
+export function DashboardView({ showAttImportLink }: { showAttImportLink: boolean }) {
   const router = useRouter();
   const [rows, setRows] = useState<LeadRequestRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
@@ -290,6 +290,14 @@ export function DashboardView() {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          {showAttImportLink ? (
+            <Link
+              href="/dashboard/import"
+              className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--secondary)] transition-colors hover:bg-[var(--input)] hover:text-[var(--foreground)]"
+            >
+              Import AT&amp;T Report
+            </Link>
+          ) : null}
           <div ref={exportMenuRef} className="relative">
             <div className="inline-flex h-10 overflow-hidden rounded-[6px] border border-[var(--border)] bg-transparent">
               <button
