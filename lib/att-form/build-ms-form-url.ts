@@ -2,19 +2,19 @@ const MS_FORMS_BASE =
   "https://forms.office.com/Pages/ResponsePage.aspx?id=HNdB57bGsEeAPA87MrB1VlEkObXQ4u5EpnugCclqPoxUQVcyRFVPMVBWNEdFOUZNVjNDMjNMMUVEUSQlQCN0PWcu";
 
 const F = {
-  territoryLine: "r9b9472872d054560aae35f97195cd818",
-  staticEmail: "ree2b900cbcaf4f6a932963512ba3efc9",
-  ownerFullName: "ra294fc13e0724e08a381f073736c8d6b",
-  ownerPhone: "rc0cb5a9ee907463e9a50ce1314bc61b1",
-  ownerEmail: "reaf1e9a2703240429fb31e2946ed1723",
-  submittedAt: "r68c3b106638a41c59f17159d286387f8",
-  officeName: "rcfe26bd9e024438ab3ce12d2a6451d24",
+  dealerName: "r9b9472872d054560aae35f97195cd818",
+  submitterEmail: "ree2b900cbcaf4f6a932963512ba3efc9",
+  submitterName: "ra294fc13e0724e08a381f073736c8d6b",
+  submitterCbr: "rc0cb5a9ee907463e9a50ce1314bc61b1",
+  leadsAdminEmail: "reaf1e9a2703240429fb31e2946ed1723",
+  submittedDate: "r68c3b106638a41c59f17159d286387f8",
+  subDealer: "rcfe26bd9e024438ab3ce12d2a6451d24",
   dealerCode: "r4c83c9327fd144d9a62ec4f8b6cc301f",
-  dateNeededBy: "r87050a717e924fb68f0606a9e8b8a7a4",
+  launchDateNeeded: "r87050a717e924fb68f0606a9e8b8a7a4",
   headcount: "r0f76abcec82344c2b538fc1ec5f6db26",
   state: "rc6f114f93816424cadd7cf3a6adc582d",
   dma: "r80e33a3048504778827a6a04c39fed6a",
-  leadTypeLabel: "r0807cfb799054e3c8a2a692cc3828f49",
+  leadType: "r0807cfb799054e3c8a2a692cc3828f49",
 } as const;
 
 const LEAD_TYPE_MS_FORM_LABEL: Record<string, string> = {
@@ -27,56 +27,17 @@ const LEAD_TYPE_MS_FORM_LABEL: Record<string, string> = {
 };
 
 const STATE_CODE_TO_NAME: Record<string, string> = {
-  AL: "Alabama",
-  AK: "Alaska",
-  AZ: "Arizona",
-  AR: "Arkansas",
-  CA: "California",
-  CO: "Colorado",
-  CT: "Connecticut",
-  DE: "Delaware",
-  FL: "Florida",
-  GA: "Georgia",
-  HI: "Hawaii",
-  ID: "Idaho",
-  IL: "Illinois",
-  IN: "Indiana",
-  IA: "Iowa",
-  KS: "Kansas",
-  KY: "Kentucky",
-  LA: "Louisiana",
-  ME: "Maine",
-  MD: "Maryland",
-  MA: "Massachusetts",
-  MI: "Michigan",
-  MN: "Minnesota",
-  MS: "Mississippi",
-  MO: "Missouri",
-  MT: "Montana",
-  NE: "Nebraska",
-  NV: "Nevada",
-  NH: "New Hampshire",
-  NJ: "New Jersey",
-  NM: "New Mexico",
-  NY: "New York",
-  NC: "North Carolina",
-  ND: "North Dakota",
-  OH: "Ohio",
-  OK: "Oklahoma",
-  OR: "Oregon",
-  PA: "Pennsylvania",
-  RI: "Rhode Island",
-  SC: "South Carolina",
-  SD: "South Dakota",
-  TN: "Tennessee",
-  TX: "Texas",
-  UT: "Utah",
-  VT: "Vermont",
-  VA: "Virginia",
-  WA: "Washington",
-  WV: "West Virginia",
-  WI: "Wisconsin",
-  WY: "Wyoming",
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+  HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+  KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi",
+  MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada",
+  NH: "New Hampshire", NJ: "New Jersey", NM: "New Mexico", NY: "New York",
+  NC: "North Carolina", ND: "North Dakota", OH: "Ohio", OK: "Oklahoma",
+  OR: "Oregon", PA: "Pennsylvania", RI: "Rhode Island", SC: "South Carolina",
+  SD: "South Dakota", TN: "Tennessee", TX: "Texas", UT: "Utah", VT: "Vermont",
+  VA: "Virginia", WA: "Washington", WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming",
 };
 
 export type BuildMsFormUrlInput = {
@@ -91,51 +52,32 @@ export type BuildMsFormUrlInput = {
   state: string;
   dma: string;
   leadAreaRequested: string;
-  territoryManagerFullName: string;
   submittedAt: Date;
 };
 
 function normalizePhone10(raw: string | null): string | null {
   if (raw == null) return null;
   const digits = raw.replace(/\D/g, "");
-  if (digits.length === 11 && digits.startsWith("1")) {
-    return digits.slice(-10);
-  }
-  if (digits.length === 10) {
-    return digits;
-  }
+  if (digits.length === 11 && digits.startsWith("1")) return digits.slice(-10);
+  if (digits.length === 10) return digits;
   return null;
 }
 
-function formatSubmittedAt(date: Date): string {
-  const s = date.toLocaleString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
-  return s.replace(/, (\d{1,2}:\d{2})/, " at $1");
+/** MS Forms date fields require M/d/yyyy with no leading zeros (e.g. 4/9/2026). */
+function formatDateMdYyyy(date: Date): string {
+  const m = date.getMonth() + 1;
+  const d = date.getDate();
+  const y = date.getFullYear();
+  return `${m}/${d}/${y}`;
 }
 
-function formatDateNeededByLong(yyyyMmDd: string): string {
-  const d = new Date(`${yyyyMmDd}T12:00:00Z`);
-  return d.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+/** Parse yyyy-MM-dd at noon UTC to avoid timezone rollover, format as M/d/yyyy. */
+function formatYyyyMmDdAsMdYyyy(yyyyMmDd: string): string {
+  const parsed = new Date(`${yyyyMmDd}T12:00:00Z`);
+  return formatDateMdYyyy(parsed);
 }
 
-function setIfNonEmpty(url: URL, key: string, value: string | null | undefined) {
-  if (value == null) return;
-  const t = value.trim();
-  if (t.length === 0) return;
-  url.searchParams.set(key, t);
-}
-
-/** MS Forms expect full state names; accept legacy 2-letter codes or full names. */
+/** MS Forms expect full state names; accept 2-letter codes or full names. */
 function resolveStateForMsForm(raw: string): string | undefined {
   const trimmed = raw.trim();
   if (trimmed.length === 0) return undefined;
@@ -149,50 +91,53 @@ function resolveStateForMsForm(raw: string): string | undefined {
   );
 }
 
+/**
+ * Build a prefill query string where spaces are encoded as %20 (not +).
+ * Microsoft Forms interprets `+` as a literal plus sign in prefill URLs,
+ * so we cannot use URLSearchParams (which uses `+` for spaces).
+ */
+function buildPrefillQuery(params: Array<[string, string | null | undefined]>): string {
+  const parts: string[] = [];
+  for (const [key, value] of params) {
+    if (value == null) continue;
+    const trimmed = typeof value === "string" ? value.trim() : "";
+    if (trimmed.length === 0) continue;
+    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(trimmed)}`);
+  }
+  return parts.join("&");
+}
+
 export function buildMsFormUrl(input: BuildMsFormUrlInput): string {
-  const url = new URL(MS_FORMS_BASE);
-
-  const tm = input.territoryManagerFullName.trim();
-  if (tm.length > 0) {
-    url.searchParams.set(F.territoryLine, `CYDCOR - ${tm.toUpperCase()}`);
-  }
-
-  url.searchParams.set(F.staticEmail, "ATTleads@cydcor.com");
-
-  setIfNonEmpty(url, F.ownerFullName, input.ownerFullName);
-  setIfNonEmpty(url, F.ownerEmail, input.ownerEmail);
-
-  const phone10 = normalizePhone10(input.ownerPhone);
-  if (phone10) {
-    url.searchParams.set(F.ownerPhone, phone10);
-  }
-
-  url.searchParams.set(F.submittedAt, formatSubmittedAt(input.submittedAt));
-
   const office =
     input.ownerLegalCorpName?.trim() ||
     input.ownerOfficeName?.trim() ||
     null;
-  setIfNonEmpty(url, F.officeName, office);
 
-  setIfNonEmpty(url, F.dealerCode, input.dealerCode);
+  const phone10 = normalizePhone10(input.ownerPhone);
 
-  if (input.dateNeededBy?.trim()) {
-    url.searchParams.set(
-      F.dateNeededBy,
-      formatDateNeededByLong(input.dateNeededBy.trim()),
-    );
-  }
-
-  url.searchParams.set(F.headcount, "10");
+  const dateNeededBy = input.dateNeededBy?.trim()
+    ? formatYyyyMmDdAsMdYyyy(input.dateNeededBy.trim())
+    : null;
 
   const stateFull = resolveStateForMsForm(input.state);
-  setIfNonEmpty(url, F.state, stateFull);
-
-  setIfNonEmpty(url, F.dma, input.dma);
-
   const leadLabel = LEAD_TYPE_MS_FORM_LABEL[input.leadType];
-  setIfNonEmpty(url, F.leadTypeLabel, leadLabel);
 
-  return url.toString();
+  const params: Array<[string, string | null | undefined]> = [
+    [F.dealerName, "CYDCOR"],
+    [F.submitterEmail, "ATTleads@cydcor.com"],
+    [F.submitterName, input.ownerFullName],
+    [F.submitterCbr, phone10],
+    [F.leadsAdminEmail, input.ownerEmail],
+    [F.submittedDate, formatDateMdYyyy(input.submittedAt)],
+    [F.subDealer, office],
+    [F.dealerCode, input.dealerCode],
+    [F.launchDateNeeded, dateNeededBy],
+    [F.headcount, "10"],
+    [F.state, stateFull],
+    [F.dma, input.dma],
+    [F.leadType, leadLabel],
+  ];
+
+  const query = buildPrefillQuery(params);
+  return query.length > 0 ? `${MS_FORMS_BASE}&${query}` : MS_FORMS_BASE;
 }

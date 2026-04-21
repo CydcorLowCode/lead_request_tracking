@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { SlaChip } from "@/components/requests/sla-chip";
@@ -18,7 +18,7 @@ import {
 import { evaluateSlaStatus } from "@/lib/sla/evaluate";
 import type { Tables } from "@/types/database";
 import { LEAD_REQUEST_STATUSES } from "@/types/enums";
-import { updateLeadRequestAction } from "./actions";
+import { deleteLeadRequestAction, updateLeadRequestAction } from "./actions";
 
 type SlaConfigRow = Pick<Tables<"lrt_sla_configs">, "campaign_id" | "lead_type" | "warning_hours">;
 type AuditRow = Tables<"lrt_audit_log">;
@@ -50,15 +50,28 @@ function formatLeadTypeLabel(value: string) {
     .join(" ");
 }
 
-function CopyValueButton({ text, ariaLabel }: { text: string; ariaLabel: string }) {
+function CopyValueButton({
+  text,
+  ariaLabel,
+  alwaysVisible = false,
+}: {
+  text: string;
+  ariaLabel: string;
+  /** When true, render a disabled Copy control when there is nothing to copy (e.g. empty form field). */
+  alwaysVisible?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
   const trimmed = text.trim();
-  if (!trimmed || trimmed === "—") return null;
+  const empty = !trimmed || trimmed === "—";
+  if (empty && !alwaysVisible) return null;
 
   return (
     <button
       type="button"
+      disabled={empty}
+      title={empty ? "Nothing to copy yet" : undefined}
       onClick={async () => {
+        if (empty) return;
         try {
           await navigator.clipboard.writeText(text);
           setCopied(true);
@@ -67,7 +80,7 @@ function CopyValueButton({ text, ariaLabel }: { text: string; ariaLabel: string 
           toast.error("Could not copy to clipboard.");
         }
       }}
-      className="inline-flex h-7 shrink-0 items-center rounded-[6px] border border-[var(--border)] bg-transparent px-2 text-[10px] font-medium text-[var(--muted)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
+      className="inline-flex h-7 shrink-0 items-center rounded-[6px] border border-[var(--border)] bg-transparent px-2 text-[10px] font-medium text-[var(--muted)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--border)] disabled:hover:text-[var(--muted)]"
       aria-label={`Copy ${ariaLabel}`}
     >
       {copied ? "Copied" : "Copy"}
@@ -95,6 +108,8 @@ function AuditEntry({ entry, currentUserId }: { entry: AuditRow; currentUserId: 
     description = entry.new_value
       ? "Denied zip codes updated"
       : "Denied zip codes cleared";
+  } else if (entry.field_name === "notes_for_icl") {
+    description = entry.new_value ? "Notes for ICL updated" : "Notes for ICL cleared";
   } else if (entry.field_name) {
     description = `${entry.field_name} updated`;
   }
@@ -134,6 +149,8 @@ export function RequestDetailView({
   });
 
   const isTerritoryTeam = currentProfile.role === "territory_team";
+  const isOwnerViewer =
+    currentProfile.role === "owner" && currentProfile.id === row.owner_id;
   const router = useRouter();
 
   // Form state
@@ -146,6 +163,26 @@ export function RequestDetailView({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletePending, setDeletePending] = useState(false);
+
+  useEffect(() => {
+    setFormStatus(row.status);
+    setAttConfirmationNumber(row.att_confirmation_number ?? "");
+    setInternalNotes(row.internal_notes ?? "");
+    setNotesForIcl(row.notes_for_icl ?? "");
+    setApprovedZipCodes(row.approved_zip_codes ?? "");
+    setDeniedZipCodes(row.denied_zip_codes ?? "");
+  }, [
+    row.id,
+    row.status,
+    row.att_confirmation_number,
+    row.internal_notes,
+    row.notes_for_icl,
+    row.approved_zip_codes,
+    row.denied_zip_codes,
+  ]);
 
   function handleSave() {
     setSaveError(null);
@@ -168,6 +205,24 @@ export function RequestDetailView({
         setSaveError(result.message ?? "Something went wrong.");
       }
     });
+  }
+
+  async function handleDeleteConfirm() {
+    setDeleteError(null);
+    setDeletePending(true);
+    try {
+      const result = await deleteLeadRequestAction(row.id);
+      if (!result.ok) {
+        setDeleteError(result.message ?? "Could not delete this request.");
+        return;
+      }
+      toast.success("Request deleted.");
+      router.push(isTerritoryTeam ? "/dashboard" : "/my-requests");
+    } catch {
+      setDeleteError("Unexpected error while deleting.");
+    } finally {
+      setDeletePending(false);
+    }
   }
 
   const formData = row.form_data as Record<string, unknown> | null;
@@ -226,6 +281,18 @@ export function RequestDetailView({
           >
             New Request
           </Link>
+          {isTerritoryTeam || isOwnerViewer ? (
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteError(null);
+                setIsDeleteConfirmOpen(true);
+              }}
+              className="inline-flex h-9 items-center rounded-[6px] border border-[#ef44444d] px-3 text-sm text-[var(--status-red)] transition-colors hover:border-[var(--status-red)] hover:bg-[#ef444414]"
+            >
+              Delete
+            </button>
+          ) : null}
           <LogoutButton />
         </div>
       </div>
@@ -407,7 +474,7 @@ export function RequestDetailView({
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <label className="text-xs font-medium text-[var(--secondary)]">Denied Zip Codes</label>
-                      <CopyValueButton text={deniedZipCodes} ariaLabel="denied zip codes" />
+                      <CopyValueButton text={deniedZipCodes} ariaLabel="denied zip codes" alwaysVisible />
                     </div>
                     <textarea
                       value={deniedZipCodes}
@@ -488,18 +555,68 @@ export function RequestDetailView({
                 </div>
               </div>
             </div>
-          ) : (
-            /* Owner read-only notes */
-            row.notes_for_icl ? (
-              <div className="rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-5 py-4">
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-[11px] uppercase tracking-[0.05em] text-[var(--muted)]">Notes from Territory Team</p>
-                  <CopyValueButton text={row.notes_for_icl} ariaLabel="notes from territory team" />
-                </div>
-                <p className="mt-2 text-sm text-[var(--foreground)]">{row.notes_for_icl}</p>
+          ) : isOwnerViewer ? (
+            <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
+              <div className="border-b border-[var(--border)] px-[18px] py-3.5">
+                <p className="text-[13px] font-semibold text-[var(--foreground)]">Notes for ICL</p>
+                <p className="mt-0.5 text-[12px] text-[var(--secondary)]">
+                  Shared with the territory team. Edit and save to send an update.
+                </p>
               </div>
-            ) : null
-          )}
+              <div className="flex flex-col gap-4 px-[18px] py-[18px]">
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <label className="text-xs font-medium text-[var(--secondary)]" htmlFor="owner-notes-for-icl">
+                      Your notes
+                    </label>
+                    <CopyValueButton text={notesForIcl} ariaLabel="notes for ICL" alwaysVisible />
+                  </div>
+                  <textarea
+                    id="owner-notes-for-icl"
+                    value={notesForIcl}
+                    onChange={(e) => setNotesForIcl(e.target.value)}
+                    placeholder="Add a message for the territory team…"
+                    rows={5}
+                    className="resize-y rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--border-hover)]"
+                  />
+                </div>
+
+                {saveError ? (
+                  <p className="rounded-[6px] border border-[#ef44444d] bg-[var(--card)] px-4 py-2.5 text-sm text-[var(--status-red)]">
+                    {saveError}
+                  </p>
+                ) : null}
+
+                {saved ? (
+                  <p className="rounded-[6px] border border-[#22c55e4d] bg-[var(--card)] px-4 py-2.5 text-sm text-[var(--status-green)]">
+                    Changes saved successfully.
+                  </p>
+                ) : null}
+
+                <div className="flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNotesForIcl(row.notes_for_icl ?? "");
+                      setSaveError(null);
+                      setSaved(false);
+                    }}
+                    className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-4 text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)]"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSave}
+                    disabled={isPending}
+                    className="inline-flex h-9 items-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)] disabled:opacity-50"
+                  >
+                    {isPending ? "Saving…" : "Save Changes"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Right column — audit log */}
@@ -518,6 +635,50 @@ export function RequestDetailView({
           </div>
         </div>
       </div>
+
+      {isDeleteConfirmOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: "color-mix(in oklab, var(--secondary) 45%, transparent)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-request-title"
+        >
+          <div className="w-full max-w-[520px] rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+            <h2 id="delete-request-title" className="text-lg font-semibold text-[var(--foreground)]">
+              Delete this request?
+            </h2>
+            <p className="mt-1 text-sm text-[var(--secondary)]">
+              This permanently removes the request and related activity. This cannot be undone.
+            </p>
+
+            {deleteError ? (
+              <p className="mt-3 rounded-[6px] border border-[#ef44444d] bg-[var(--card)] px-3 py-2 text-sm text-[var(--status-red)]">
+                {deleteError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={deletePending}
+                className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-3 text-sm text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteConfirm()}
+                disabled={deletePending}
+                className="inline-flex h-9 items-center rounded-[6px] border border-[#ef44444d] bg-[var(--status-red)] px-3 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {deletePending ? "Deleting…" : "Delete permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

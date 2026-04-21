@@ -118,7 +118,6 @@ export async function submitLeadRequestAction(
     state: input.state,
     dma: input.dma,
     leadAreaRequested: input.requestedLocation,
-    territoryManagerFullName: ctx.profile.full_name ?? ctx.profile.email,
     submittedAt,
   });
 

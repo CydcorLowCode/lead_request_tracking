@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { bulkUpdateStatusAction } from "@/app/dashboard/actions";
+import { bulkDeleteRequestsAction, bulkUpdateStatusAction } from "@/app/dashboard/actions";
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
 import { LogoutButton } from "@/components/auth/logout-button";
@@ -58,6 +58,9 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
   const [bulkStatus, setBulkStatus] = useState<LeadRequestStatus>("new");
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [bulkError, setBulkError] = useState<string | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("xlsx");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<LeadRequestStatus | "all">("all");
@@ -338,6 +341,38 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
       return;
     }
     exportLeadRequests(selectedRows, profileMap, { format: "xlsx" });
+  }
+
+  function openDeleteConfirm() {
+    setDeleteError(null);
+    setIsDeleteConfirmOpen(true);
+  }
+
+  async function handleDeleteConfirm() {
+    if (selectedIds.size === 0) {
+      setDeleteError("Select at least one request.");
+      return;
+    }
+
+    setDeleteSubmitting(true);
+    setDeleteError(null);
+    try {
+      const result = await bulkDeleteRequestsAction({ ids: Array.from(selectedIds) });
+
+      if (!result.ok) {
+        setDeleteError(result.message ?? "Unable to delete requests.");
+        return;
+      }
+
+      toast.success(result.message ?? "Requests deleted.");
+      setSelectedIds(new Set());
+      await loadDashboardData();
+      setIsDeleteConfirmOpen(false);
+    } catch {
+      setDeleteError("Unexpected error deleting requests.");
+    } finally {
+      setDeleteSubmitting(false);
+    }
   }
 
   async function handleBulkStatusConfirm() {
@@ -767,6 +802,13 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
           </button>
           <button
             type="button"
+            onClick={openDeleteConfirm}
+            className="inline-flex h-9 items-center rounded-[6px] border border-[#ef44444d] px-3 text-sm text-[var(--status-red)] transition-colors hover:border-[var(--status-red)] hover:bg-[#ef444414]"
+          >
+            Delete
+          </button>
+          <button
+            type="button"
             onClick={() => setSelectedIds(new Set())}
             className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-3 text-sm text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
           >
@@ -774,6 +816,50 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
           </button>
         </div>
       </div>
+
+      {isDeleteConfirmOpen ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ backgroundColor: "color-mix(in oklab, var(--secondary) 45%, transparent)" }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-selected-title"
+        >
+          <div className="w-full max-w-[520px] rounded-[10px] border border-[var(--border)] bg-[var(--card)] p-5 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
+            <h2 id="delete-selected-title" className="text-lg font-semibold text-[var(--foreground)]">
+              Delete {selectedCount} request{selectedCount === 1 ? "" : "s"}?
+            </h2>
+            <p className="mt-1 text-sm text-[var(--secondary)]">
+              This permanently removes the selected requests and related records. This action cannot be undone.
+            </p>
+
+            {deleteError ? (
+              <p className="mt-3 rounded-[6px] border border-[#ef44444d] bg-[var(--card)] px-3 py-2 text-sm text-[var(--status-red)]">
+                {deleteError}
+              </p>
+            ) : null}
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={deleteSubmitting}
+                className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-3 text-sm text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleDeleteConfirm()}
+                disabled={deleteSubmitting}
+                className="inline-flex h-9 items-center rounded-[6px] border border-[#ef44444d] bg-[var(--status-red)] px-3 text-[13px] font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {deleteSubmitting ? "Deleting..." : "Delete permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {isBulkStatusModalOpen ? (
         <div
