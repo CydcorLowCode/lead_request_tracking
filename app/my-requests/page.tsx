@@ -8,6 +8,9 @@ export default async function MyRequestsPage() {
   if (!ctx) {
     redirect("/login");
   }
+  if (ctx.isTerritoryTeam) {
+    redirect("/dashboard");
+  }
 
   return <MyRequestsView />;
 }

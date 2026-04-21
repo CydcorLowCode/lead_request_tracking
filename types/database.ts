@@ -6480,9 +6480,9 @@ export type Database = {
       longtransactionsenabled: { Args: never; Returns: boolean }
       lrt_append_audit_log: {
         Args: {
-          p_field_name: string
-          p_new_value: string
-          p_old_value: string
+          p_field_name: string | null
+          p_new_value: string | null
+          p_old_value: string | null
           p_request_id: string
         }
         Returns: string
@@ -7277,3 +7277,7 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+/** App-facing profile role (DB column is `text`). */
+export type LrtProfileRole =
+  Database["public"]["Tables"]["lrt_profiles"]["Row"]["role"];

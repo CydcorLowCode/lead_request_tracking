@@ -34,6 +34,32 @@ export function formatLeadType(value: string): string {
     .join(" ");
 }
 
+/**
+ * Clean legacy lead_area_requested values for display.
+ * Extracts 5-digit zip codes; falls back to raw string if none found.
+ * Plain city/market strings pass through unchanged.
+ */
+export function formatLeadArea(raw: string | null | undefined): string {
+  if (!raw) return "—";
+  const s = String(raw);
+  // If it already looks like a normal location (has a letter followed by
+  // a space, like "Bloomfield, IN"), leave it alone.
+  if (/[A-Za-z]{2,}\s/.test(s) && !/^\d{5}[A-Z]/.test(s)) return s;
+  // Not \b\d{5}\b: digits and letters are both "word" chars, so there is no
+  // boundary between `33472` and `B` in legacy blobs like `33472BYBHFLMA4401PB`.
+  const re = /(?<!\d)\d{5}(?!\d)/g;
+  const seen = new Set<string>();
+  const ordered: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(s)) !== null) {
+    if (!seen.has(m[0])) {
+      seen.add(m[0]);
+      ordered.push(m[0]);
+    }
+  }
+  return ordered.length ? ordered.join(", ") : s;
+}
+
 export function buildSlaWarningLookup(configs: SlaConfigLookupRow[]) {
   const byCampaignAndLeadType: Record<string, number> = {};
   const byLeadType: Record<string, number> = {};

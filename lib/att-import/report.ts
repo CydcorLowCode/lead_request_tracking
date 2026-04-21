@@ -108,7 +108,9 @@ export function calendarDaysApart(a: Date, b: Date): number {
 /** First-seen unique 5-digit zips, joined with ", ". */
 export function extractZipsJoined(text: string): string | null {
   const s = text.replace(/\n/g, " ");
-  const re = /\b\d{5}\b/g;
+  // Not \b\d{5}\b: no word boundary between a trailing digit and a letter
+  // (e.g. `33472BYBHFLMA4401PB` from Glide).
+  const re = /(?<!\d)\d{5}(?!\d)/g;
   const seen = new Set<string>();
   const ordered: string[] = [];
   let m: RegExpExecArray | null;

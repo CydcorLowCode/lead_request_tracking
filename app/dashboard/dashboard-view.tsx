@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   buildSlaWarningLookup,
+  formatLeadArea,
   formatLeadType,
   formatShortDate,
   getWarningHoursForRequest,
@@ -30,7 +31,9 @@ type SlaFilter = "all" | "overdue" | "at_risk" | "on_track";
 type SlaConfigRow = Pick<Tables<"lrt_sla_configs">, "campaign_id" | "lead_type" | "warning_hours">;
 type ProfileRow = Pick<Tables<"lrt_profiles">, "id" | "full_name" | "email">;
 
-const FILTER_CHIPS = ["All Status", "Lead Type", "Office", "DMA", "Date Range"];
+const FILTER_SELECT_CLASS =
+  "inline-flex h-8 max-w-[220px] min-w-0 shrink cursor-pointer rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-[7px] text-[12px] text-[var(--secondary)] transition-colors hover:border-[var(--border-hover)] hover:text-[var(--foreground)] outline-none focus:border-[var(--accent)]";
+
 const STATUS_OPTIONS: Array<{ value: LeadRequestStatus; label: string }> = [
   { value: "new", label: "New" },
   { value: "submitted_to_client", label: "Submitted to AT&T" },
@@ -57,7 +60,12 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
   const [bulkError, setBulkError] = useState<string | null>(null);
   const [exportFormat, setExportFormat] = useState<"csv" | "xlsx">("xlsx");
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const [activeFilterChip, setActiveFilterChip] = useState<string | null>("All Status");
+  const [statusFilter, setStatusFilter] = useState<LeadRequestStatus | "all">("all");
+  const [leadTypeFilter, setLeadTypeFilter] = useState<string>("all");
+  const [officeFilter, setOfficeFilter] = useState<string>("all");
+  const [dmaFilter, setDmaFilter] = useState<string>("all");
+  const [dateFromFilter, setDateFromFilter] = useState<string>("");
+  const [dateToFilter, setDateToFilter] = useState<string>("");
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const isMountedRef = useRef(true);
 
@@ -176,10 +184,69 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
     [withSla],
   );
 
+  const leadTypeOptions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.lead_type))).sort(),
+    [rows],
+  );
+  const officeOptions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.office).filter(Boolean))).sort() as string[],
+    [rows],
+  );
+  const dmaOptions = useMemo(
+    () => Array.from(new Set(rows.map((r) => r.dma).filter(Boolean))).sort() as string[],
+    [rows],
+  );
+
+  const hasActiveFilters = useMemo(
+    () =>
+      statusFilter !== "all" ||
+      leadTypeFilter !== "all" ||
+      officeFilter !== "all" ||
+      dmaFilter !== "all" ||
+      dateFromFilter !== "" ||
+      dateToFilter !== "" ||
+      searchTerm.trim() !== "" ||
+      slaFilter !== "all",
+    [
+      statusFilter,
+      leadTypeFilter,
+      officeFilter,
+      dmaFilter,
+      dateFromFilter,
+      dateToFilter,
+      searchTerm,
+      slaFilter,
+    ],
+  );
+
   const filteredRows = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
     return withSla.filter(({ row, sla }) => {
       if (slaFilter !== "all" && sla?.status !== slaFilter) {
+        return false;
+      }
+
+      if (statusFilter !== "all" && row.status !== statusFilter) {
+        return false;
+      }
+
+      if (leadTypeFilter !== "all" && row.lead_type !== leadTypeFilter) {
+        return false;
+      }
+
+      if (officeFilter !== "all" && row.office !== officeFilter) {
+        return false;
+      }
+
+      if (dmaFilter !== "all" && row.dma !== dmaFilter) {
+        return false;
+      }
+
+      if (dateFromFilter !== "" && new Date(row.created_at) < new Date(dateFromFilter)) {
+        return false;
+      }
+
+      if (dateToFilter !== "" && new Date(row.created_at) > new Date(`${dateToFilter}T23:59:59`)) {
         return false;
       }
 
@@ -192,7 +259,17 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
         .toLowerCase();
       return searchable.includes(query);
     });
-  }, [searchTerm, slaFilter, withSla]);
+  }, [
+    searchTerm,
+    slaFilter,
+    statusFilter,
+    leadTypeFilter,
+    officeFilter,
+    dmaFilter,
+    dateFromFilter,
+    dateToFilter,
+    withSla,
+  ]);
 
   const selectedCount = selectedIds.size;
   const allSelected = filteredRows.length > 0 && selectedCount === filteredRows.length;
@@ -243,6 +320,17 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
     exportFilteredRows(format);
   }
 
+  function clearAllFilters() {
+    setStatusFilter("all");
+    setLeadTypeFilter("all");
+    setOfficeFilter("all");
+    setDmaFilter("all");
+    setDateFromFilter("");
+    setDateToFilter("");
+    setSearchTerm("");
+    setSlaFilter("all");
+  }
+
   function handleExportSelected() {
     const selectedRows = rows.filter((r) => selectedIds.has(r.id));
     if (selectedRows.length === 0) {
@@ -282,7 +370,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-[1220px] flex-col gap-6 px-6 py-10">
+    <main className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-6 py-10">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-[20px] font-semibold tracking-tight text-[var(--foreground)]">Dashboard</h1>
@@ -416,23 +504,85 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
             className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-[var(--foreground)] outline-none placeholder:text-[var(--muted)]"
           />
         </div>
-        {FILTER_CHIPS.map((chip) => {
-          const isActive = activeFilterChip === chip;
-          return (
-            <button
-              key={chip}
-              type="button"
-              onClick={() => setActiveFilterChip(chip)}
-              className={`inline-flex min-h-8 items-center rounded-[6px] border px-3 py-[7px] text-[12px] transition-colors ${
-                isActive
-                  ? "border-[rgba(79,124,255,0.3)] bg-[var(--blue-bg)] text-[var(--accent)]"
-                  : "border-[var(--border)] bg-[var(--input)] text-[var(--secondary)] hover:border-[var(--border-hover)] hover:text-[var(--foreground)]"
-              }`}
-            >
-              {chip}
-            </button>
-          );
-        })}
+        <select
+          value={statusFilter}
+          onChange={(event) =>
+            setStatusFilter(
+              event.target.value === "all" ? "all" : (event.target.value as LeadRequestStatus),
+            )
+          }
+          aria-label="Filter by status"
+          className={FILTER_SELECT_CLASS}
+        >
+          <option value="all">All Status</option>
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          value={leadTypeFilter}
+          onChange={(event) => setLeadTypeFilter(event.target.value)}
+          aria-label="Filter by lead type"
+          className={FILTER_SELECT_CLASS}
+        >
+          <option value="all">All Lead Types</option>
+          {leadTypeOptions.map((value) => (
+            <option key={value} value={value}>
+              {formatLeadType(value)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={officeFilter}
+          onChange={(event) => setOfficeFilter(event.target.value)}
+          aria-label="Filter by office"
+          className={FILTER_SELECT_CLASS}
+        >
+          <option value="all">All Offices</option>
+          {officeOptions.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+        <select
+          value={dmaFilter}
+          onChange={(event) => setDmaFilter(event.target.value)}
+          aria-label="Filter by DMA"
+          className={FILTER_SELECT_CLASS}
+        >
+          <option value="all">All DMAs</option>
+          {dmaOptions.map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+        <input
+          type="date"
+          value={dateFromFilter}
+          onChange={(event) => setDateFromFilter(event.target.value)}
+          aria-label="Submitted from date"
+          className={`${FILTER_SELECT_CLASS} max-w-none font-mono text-[11px]`}
+        />
+        <input
+          type="date"
+          value={dateToFilter}
+          onChange={(event) => setDateToFilter(event.target.value)}
+          aria-label="Submitted to date"
+          className={`${FILTER_SELECT_CLASS} max-w-none font-mono text-[11px]`}
+        />
+        {hasActiveFilters ? (
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="inline-flex h-8 items-center rounded-[6px] border border-transparent px-3 text-[12px] text-[var(--secondary)] transition-colors hover:bg-[var(--input)] hover:text-[var(--foreground)]"
+          >
+            Clear filters
+          </button>
+        ) : null}
       </div>
 
       <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
@@ -541,11 +691,11 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
                         </p>
                         <p className="font-mono text-[11px] text-[var(--muted)]">{row.dealer_code ?? "—"}</p>
                       </td>
-                      <td className="px-[14px] py-[11px]">
+                      <td className="whitespace-nowrap px-[14px] py-[11px]">
                         <span className="lrt-lead-type">{formatLeadType(row.lead_type)}</span>
                       </td>
-                      <td className="whitespace-nowrap px-[14px] py-[11px] text-[13px] text-[var(--secondary)]">
-                        {row.lead_area_requested}
+                      <td className="max-w-[320px] break-words px-[14px] py-[11px] text-[13px] text-[var(--secondary)]">
+                        {formatLeadArea(row.lead_area_requested)}
                       </td>
                       <td className="px-[14px] py-[11px]">
                         <StatusBadge status={status} />
