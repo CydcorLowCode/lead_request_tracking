@@ -150,6 +150,14 @@ export async function bulkDeleteRequestsAction(
   }
 
   const deletedCount = deletedRows?.length ?? 0;
+  if (deletedCount === 0 && ids.length > 0) {
+    return {
+      ok: false,
+      message:
+        "Delete removed no rows. Apply pending Supabase migrations (DELETE policies on lrt_lead_requests) or confirm you are allowed to delete these requests.",
+    };
+  }
+
   return {
     ok: true,
     message: `Deleted ${deletedCount} request${deletedCount === 1 ? "" : "s"}.`,

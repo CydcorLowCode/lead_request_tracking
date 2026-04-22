@@ -18,12 +18,21 @@ const F = {
 } as const;
 
 const LEAD_TYPE_MS_FORM_LABEL: Record<string, string> = {
-  permanent_assignment: "SLA 10 - Additional Leads",
+  // Existing 6 — labels corrected to match the AT&T form exactly
+  permanent_assignment: "SLA 10 - Additional Leads - Incumbent Sub-Dealer",
   business_trip: "SLA 10 - 30 Days Road Trip/Seasonal",
-  nlt_new_fiber: "SLA 2 - Weekly New Fiber Road Trip",
-  market_proposal: "Market Proposal",
-  oof_wireless: "OOF/Wireless",
-  pullback: "Pullback/No Longer Needed",
+  nlt_new_fiber: "SLA 2 - Weekly Unassigned New Fiber Road Trip",
+  market_proposal: "SLA 10 - Market Proposal/Zip Code List (Check DMA availability in MOR Report)",
+  oof_wireless: "SLA 10 - OOF WIRELESS",
+  pullback: "Pullback/Remove Zip Code",
+
+  // New 6 — territory-team-only lead types
+  oof_aia_wireless: "SLA 10 - OOF - AIA/WIRELESS",
+  qa_pullback_permit: "QA PULLBACK - NOT MEETING PERMIT REQ",
+  mdu_acc: "SLA 10 - MDU/ACC Program",
+  office_closure: "Office Closure",
+  natural_disaster: "Natural Disaster",
+  no_solicitation: "SLA 10 - No Solicitation, Violation of Local Solicitation",
 };
 
 const STATE_CODE_TO_NAME: Record<string, string> = {

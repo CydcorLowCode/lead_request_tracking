@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { bulkDeleteRequestsAction, bulkUpdateStatusAction } from "@/app/dashboard/actions";
+import { bulkDeleteRequestsAction, bulkUpdateStatusAction } from "@/app/(territory-team)/dashboard/actions";
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
 import { LogoutButton } from "@/components/auth/logout-button";
@@ -415,7 +415,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
           <ThemeToggle />
           {showAttImportLink ? (
             <Link
-              href="/dashboard/import"
+              href="/imports/new"
               className="inline-flex h-10 items-center justify-center rounded-[6px] border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--secondary)] transition-colors hover:bg-[var(--input)] hover:text-[var(--foreground)]"
             >
               Import AT&amp;T Report

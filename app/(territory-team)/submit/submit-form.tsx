@@ -4,7 +4,7 @@ import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-import { submitLeadRequestAction } from "@/app/submit/actions";
+import { markRequestSubmittedAction, submitLeadRequestAction } from "@/app/(territory-team)/submit/actions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Combobox } from "@/components/ui/combobox";
@@ -20,6 +20,7 @@ import type { LrtProfileRole } from "@/types/database";
 type LeadTypeOption = {
   value: string;
   label: string;
+  territory_team_only?: boolean;
 };
 
 type SubmitFormProps = {
@@ -47,6 +48,7 @@ type DmaOption = {
 };
 
 type SubmitSuccessState = {
+  requestId: string;
   msFormUrl: string;
   redirectTo: string;
 };
@@ -132,6 +134,13 @@ export function SubmitForm({
 }: SubmitFormProps) {
   const router = useRouter();
   const todayStr = new Date().toLocaleDateString("en-CA");
+  const visibleLeadTypes = useMemo(
+    () =>
+      sessionRole === "owner"
+        ? leadTypes.filter((lt) => !lt.territory_team_only)
+        : leadTypes,
+    [leadTypes, sessionRole],
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [ownerOptions, setOwnerOptions] = useState<OwnerOption[]>([]);
@@ -139,7 +148,7 @@ export function SubmitForm({
   const [isOwnerLoading, setIsOwnerLoading] = useState(sessionRole === "territory_team");
   const [isDmaLoading, setIsDmaLoading] = useState(true);
 
-  const [leadType, setLeadType] = useState(leadTypes[0]?.value ?? "");
+  const [leadType, setLeadType] = useState(visibleLeadTypes[0]?.value ?? "");
   const [ownerId, setOwnerId] = useState(
     sessionRole === "owner" ? sessionProfileId : "",
   );
@@ -158,6 +167,7 @@ export function SubmitForm({
   const [zipWarning, setZipWarning] = useState<string | null>(null);
   const [globalError, setGlobalError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState<SubmitSuccessState | null>(null);
+  const [isMarkingSubmitted, setIsMarkingSubmitted] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -279,7 +289,7 @@ export function SubmitForm({
 
   function resetFormAfterSuccess() {
     setSubmitSuccess(null);
-    setLeadType(leadTypes[0]?.value ?? "");
+    setLeadType(visibleLeadTypes[0]?.value ?? "");
     setOwnerId(sessionRole === "owner" ? sessionProfileId : "");
     setDealerCode(sessionRole === "owner" ? sessionOwnerDealerCode : "");
     setDma("");
@@ -332,6 +342,7 @@ export function SubmitForm({
 
       if (result.msFormUrl) {
         setSubmitSuccess({
+          requestId: result.requestId,
           msFormUrl: result.msFormUrl,
           redirectTo: result.redirectTo ?? "/my-requests",
         });
@@ -399,14 +410,34 @@ export function SubmitForm({
                 </p>
               </div>
               <div className="flex w-full max-w-md flex-col gap-3">
-                <a
-                  href={submitSuccess.msFormUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  disabled={isMarkingSubmitted}
                   className="inline-flex w-full items-center justify-center rounded-[var(--radius-control)] border border-[var(--accent)] bg-[var(--accent)] px-6 py-3.5 text-base font-semibold text-white transition-colors hover:bg-[var(--accent2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]"
+                  onClick={async () => {
+                    if (isMarkingSubmitted) return;
+                    setIsMarkingSubmitted(true);
+                    try {
+                      const markResult = await markRequestSubmittedAction(
+                        submitSuccess.requestId,
+                      );
+                      window.open(
+                        submitSuccess.msFormUrl,
+                        "_blank",
+                        "noopener,noreferrer",
+                      );
+                      if (!markResult.ok) {
+                        toast.error(
+                          "Couldn't update request status — please update it manually from the request detail page.",
+                        );
+                      }
+                    } finally {
+                      setIsMarkingSubmitted(false);
+                    }
+                  }}
                 >
                   Open AT&amp;T Form →
-                </a>
+                </button>
                 <button
                   type="button"
                   className="inline-flex h-10 w-full items-center justify-center rounded-[6px] border border-[var(--border)] bg-transparent px-4 text-sm font-medium text-[var(--foreground)] transition-colors hover:border-[var(--border-hover)]"
@@ -437,7 +468,7 @@ export function SubmitForm({
                   id="leadType"
                   value={leadType}
                   onChange={(event) => setLeadType(event.target.value)}
-                  options={leadTypes.map((option) => ({
+                  options={visibleLeadTypes.map((option) => ({
                     value: option.value,
                     label: option.label,
                   }))}

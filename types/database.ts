@@ -2062,8 +2062,204 @@ export type Database = {
           },
         ]
       }
+      lrt_import_rows: {
+        Row: {
+          applied_at: string | null
+          att_confirmation_number: string | null
+          att_decision: string | null
+          candidate_request_ids: string[]
+          commit_payload: Json | null
+          dealer_code: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          delete_reason: string | null
+          dma: string | null
+          error_message: string | null
+          id: string
+          import_id: string
+          lead_area: string | null
+          lead_type: string | null
+          linked_request_id: string | null
+          match_status: string
+          match_tier: string | null
+          office: string | null
+          raw_row: Json
+          resolved_at: string | null
+          resolved_by: string | null
+          resolved_owner_id: string | null
+          sheet_row_index: number
+          submitted_date: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          att_confirmation_number?: string | null
+          att_decision?: string | null
+          candidate_request_ids?: string[]
+          commit_payload?: Json | null
+          dealer_code?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          delete_reason?: string | null
+          dma?: string | null
+          error_message?: string | null
+          id?: string
+          import_id: string
+          lead_area?: string | null
+          lead_type?: string | null
+          linked_request_id?: string | null
+          match_status: string
+          match_tier?: string | null
+          office?: string | null
+          raw_row?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_owner_id?: string | null
+          sheet_row_index: number
+          submitted_date?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          att_confirmation_number?: string | null
+          att_decision?: string | null
+          candidate_request_ids?: string[]
+          commit_payload?: Json | null
+          dealer_code?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          delete_reason?: string | null
+          dma?: string | null
+          error_message?: string | null
+          id?: string
+          import_id?: string
+          lead_area?: string | null
+          lead_type?: string | null
+          linked_request_id?: string | null
+          match_status?: string
+          match_tier?: string | null
+          office?: string | null
+          raw_row?: Json
+          resolved_at?: string | null
+          resolved_by?: string | null
+          resolved_owner_id?: string | null
+          sheet_row_index?: number
+          submitted_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lrt_import_rows_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "lrt_imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lrt_import_rows_linked_request_id_fkey"
+            columns: ["linked_request_id"]
+            isOneToOne: false
+            referencedRelation: "lrt_lead_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lrt_import_rows_resolved_owner_id_fkey"
+            columns: ["resolved_owner_id"]
+            isOneToOne: false
+            referencedRelation: "lrt_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lrt_import_rows_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "lrt_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lrt_import_rows_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "lrt_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lrt_imports: {
+        Row: {
+          applied_inserts: number
+          applied_resolved: number
+          applied_updates: number
+          campaign_id: string
+          committed_at: string | null
+          committed_by: string | null
+          created_at: string
+          created_by: string
+          file_name: string | null
+          id: string
+          parse_errors: Json | null
+          sheet_name: string | null
+          skipped_ambiguous: number
+          status: string
+        }
+        Insert: {
+          applied_inserts?: number
+          applied_resolved?: number
+          applied_updates?: number
+          campaign_id: string
+          committed_at?: string | null
+          committed_by?: string | null
+          created_at?: string
+          created_by: string
+          file_name?: string | null
+          id?: string
+          parse_errors?: Json | null
+          sheet_name?: string | null
+          skipped_ambiguous?: number
+          status?: string
+        }
+        Update: {
+          applied_inserts?: number
+          applied_resolved?: number
+          applied_updates?: number
+          campaign_id?: string
+          committed_at?: string | null
+          committed_by?: string | null
+          created_at?: string
+          created_by?: string
+          file_name?: string | null
+          id?: string
+          parse_errors?: Json | null
+          sheet_name?: string | null
+          skipped_ambiguous?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lrt_imports_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "lrt_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lrt_imports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "lrt_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lrt_imports_committed_by_fkey"
+            columns: ["committed_by"]
+            isOneToOne: false
+            referencedRelation: "lrt_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lrt_lead_requests: {
         Row: {
+          admin_submitted: boolean
+          admin_submitted_at: string | null
+          admin_submitted_by: string | null
           approved_zip_codes: string | null
           area_type: string
           att_confirmation_number: string | null
@@ -2100,6 +2296,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_submitted?: boolean
+          admin_submitted_at?: string | null
+          admin_submitted_by?: string | null
           approved_zip_codes?: string | null
           area_type: string
           att_confirmation_number?: string | null
@@ -2136,6 +2335,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_submitted?: boolean
+          admin_submitted_at?: string | null
+          admin_submitted_by?: string | null
           approved_zip_codes?: string | null
           area_type?: string
           att_confirmation_number?: string | null
@@ -6488,6 +6690,23 @@ export type Database = {
         Returns: string
       }
       lrt_is_territory_team: { Args: never; Returns: boolean }
+      lrt_import_match_candidates: {
+        Args: {
+          p_campaign_id: string
+          p_date_hi: string
+          p_date_lo: string
+          p_lead_type: string
+          p_office_norm: string
+        }
+        Returns: Json[]
+      }
+      commit_att_import: {
+        Args: {
+          p_committed_by_profile: string
+          p_import_id: string
+        }
+        Returns: Json
+      }
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string }

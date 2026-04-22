@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
-import { importAttReportAction, type AttImportRow } from "@/app/dashboard/import/actions";
+import { importAttReportAction, type AttImportRow } from "@/app/(territory-team)/dashboard/import/actions";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {

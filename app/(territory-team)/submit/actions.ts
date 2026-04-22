@@ -1,5 +1,6 @@
 "use server";
 
+import { appendAuditLog } from "@/lib/audit/append-audit-log";
 import { buildMsFormUrl } from "@/lib/att-form/build-ms-form-url";
 import { getSessionContext } from "@/lib/auth/get-session-user";
 import { computeSlaDueAt, pickSlaConfigForLeadType } from "@/lib/sla/compute";
@@ -20,13 +21,11 @@ type SubmitLeadRequestInput = {
   notes: string;
 };
 
-type SubmitLeadRequestResult = {
-  ok: boolean;
-  errors?: Record<string, string>;
-  message?: string;
-  redirectTo?: string;
-  msFormUrl?: string;
-};
+export type SubmitLeadRequestResult =
+  | { ok: true; requestId: string; redirectTo?: string; msFormUrl?: string }
+  | { ok: false; errors?: Record<string, string>; message?: string };
+
+export type MarkRequestSubmittedResult = { ok: boolean; message?: string };
 
 function required(value: string) {
   return value.trim().length > 0;
@@ -121,36 +120,114 @@ export async function submitLeadRequestAction(
     submittedAt,
   });
 
-  const { error: insertError } = await supabase.from("lrt_lead_requests").insert({
-    campaign_id: input.campaignId,
-    owner_id: ownerProfile.id,
-    submitted_by: ctx.profile.id,
-    submitted_on_behalf: submittedOnBehalf,
-    lead_type: input.leadType,
-    area_type: input.defaultAreaType || "market",
-    lead_area_requested: input.requestedLocation,
-    date_needed_by: input.dateNeededBy,
-    notes: input.notes.trim() || null,
-    is_reserve: input.isReserve,
-    dealer_code: input.dealerCode.trim(),
-    dma: input.dma,
-    office: ownerProfile.full_name ?? ownerProfile.email,
-    status: "new",
-    sla_due_at: slaDueAt,
-    form_data: {
-      state: input.state,
-      zip_codes: input.zipCodes.trim(),
-      ms_form_url: msFormUrl,
-    },
-  });
+  const { data: inserted, error: insertError } = await supabase
+    .from("lrt_lead_requests")
+    .insert({
+      campaign_id: input.campaignId,
+      owner_id: ownerProfile.id,
+      submitted_by: ctx.profile.id,
+      submitted_on_behalf: submittedOnBehalf,
+      lead_type: input.leadType,
+      area_type: input.defaultAreaType || "market",
+      lead_area_requested: input.requestedLocation,
+      date_needed_by: input.dateNeededBy,
+      notes: input.notes.trim() || null,
+      is_reserve: input.isReserve,
+      dealer_code: input.dealerCode.trim(),
+      dma: input.dma,
+      office: ownerProfile.full_name ?? ownerProfile.email,
+      status: "new",
+      sla_due_at: slaDueAt,
+      form_data: {
+        state: input.state,
+        zip_codes: input.zipCodes.trim(),
+        ms_form_url: msFormUrl,
+      },
+    })
+    .select("id")
+    .single();
 
-  if (insertError) {
-    return { ok: false, message: insertError.message };
+  if (insertError || !inserted) {
+    return { ok: false, message: insertError?.message ?? "Unable to save request." };
   }
 
   return {
     ok: true,
+    requestId: inserted.id,
     redirectTo: ctx.profile.role === "territory_team" ? "/dashboard" : "/my-requests",
     msFormUrl,
   };
+}
+
+export async function markRequestSubmittedAction(
+  requestId: string,
+): Promise<MarkRequestSubmittedResult> {
+  const ctx = await getSessionContext();
+  if (!ctx) {
+    return { ok: false, message: "You must be signed in." };
+  }
+
+  const id = requestId.trim();
+  if (!id) {
+    return { ok: false, message: "Invalid request." };
+  }
+
+  const supabase = await createClient();
+  const { data: row, error: fetchError } = await supabase
+    .from("lrt_lead_requests")
+    .select("id, owner_id, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchError || !row) {
+    return { ok: false, message: "Request not found." };
+  }
+
+  const isOwnerOfRequest =
+    ctx.profile.role === "owner" && ctx.profile.id === row.owner_id;
+  const isTerritoryTeam = ctx.profile.role === "territory_team";
+
+  if (!isOwnerOfRequest && !isTerritoryTeam) {
+    return { ok: false, message: "You do not have permission to update this request." };
+  }
+
+  if (row.status !== "new") {
+    return { ok: true };
+  }
+
+  const now = new Date().toISOString();
+  const { data: updated, error: updateError } = await supabase
+    .from("lrt_lead_requests")
+    .update({
+      status: "submitted_to_client",
+      updated_at: now,
+    })
+    .eq("id", id)
+    .eq("status", "new")
+    .select("id")
+    .maybeSingle();
+
+  if (updateError) {
+    return { ok: false, message: updateError.message };
+  }
+
+  if (!updated) {
+    return { ok: true };
+  }
+
+  const { error: auditError } = await appendAuditLog(supabase, {
+    requestId: id,
+    fieldName: "status",
+    oldValue: "new",
+    newValue: "submitted_to_client",
+  });
+
+  if (auditError) {
+    return {
+      ok: false,
+      message: "Saved, but failed to write the audit log entry.",
+    };
+  }
+
+  return { ok: true };
 }

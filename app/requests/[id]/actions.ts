@@ -205,10 +205,22 @@ export async function deleteLeadRequestAction(
     return { ok: false, message: "You do not have permission to delete this request." };
   }
 
-  const { error: deleteError } = await supabase.from("lrt_lead_requests").delete().eq("id", id);
+  const { data: deletedRows, error: deleteError } = await supabase
+    .from("lrt_lead_requests")
+    .delete()
+    .eq("id", id)
+    .select("id");
 
   if (deleteError) {
     return { ok: false, message: deleteError.message };
+  }
+
+  if (!deletedRows?.length) {
+    return {
+      ok: false,
+      message:
+        "Delete was blocked (no rows removed). Apply pending Supabase migrations so DELETE policies exist on lrt_lead_requests, or confirm your account can delete this row (territory team or owner with campaign access).",
+    };
   }
 
   return { ok: true };
