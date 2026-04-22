@@ -244,6 +244,7 @@ export function RequestDetailView({
   const approvedZipCodesCopyText = row.approved_zip_codes?.trim() ?? "";
   const deniedZipCodesCopyText = row.denied_zip_codes?.trim() ?? "";
   const submitterNotesCopyText = row.notes?.trim() ?? "";
+  const territoryMessageTrimmed = (row.notes_for_icl ?? "").trim();
 
   return (
     <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-6 py-10">
@@ -557,63 +558,25 @@ export function RequestDetailView({
             </div>
           ) : isOwnerViewer ? (
             <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
-              <div className="border-b border-[var(--border)] px-[18px] py-3.5">
-                <p className="text-[13px] font-semibold text-[var(--foreground)]">Notes for ICL</p>
-                <p className="mt-0.5 text-[12px] text-[var(--secondary)]">
-                  Shared with the territory team. Edit and save to send an update.
-                </p>
+              <div className="flex items-start gap-2.5 border-b border-[var(--border)] px-[18px] py-3.5">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-[var(--foreground)]">Message from Territory Team</p>
+                  <p className="mt-0.5 text-[12px] text-[var(--secondary)]">
+                    Updates from the team handling your request.
+                  </p>
+                </div>
+                <CopyValueButton
+                  text={territoryMessageTrimmed}
+                  ariaLabel="message from territory team"
+                  alwaysVisible
+                />
               </div>
-              <div className="flex flex-col gap-4 px-[18px] py-[18px]">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <label className="text-xs font-medium text-[var(--secondary)]" htmlFor="owner-notes-for-icl">
-                      Your notes
-                    </label>
-                    <CopyValueButton text={notesForIcl} ariaLabel="notes for ICL" alwaysVisible />
-                  </div>
-                  <textarea
-                    id="owner-notes-for-icl"
-                    value={notesForIcl}
-                    onChange={(e) => setNotesForIcl(e.target.value)}
-                    placeholder="Add a message for the territory team…"
-                    rows={5}
-                    className="resize-y rounded-[6px] border border-[var(--border)] bg-[var(--input)] px-3 py-2 text-sm text-[var(--foreground)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--border-hover)]"
-                  />
-                </div>
-
-                {saveError ? (
-                  <p className="rounded-[6px] border border-[#ef44444d] bg-[var(--card)] px-4 py-2.5 text-sm text-[var(--status-red)]">
-                    {saveError}
-                  </p>
-                ) : null}
-
-                {saved ? (
-                  <p className="rounded-[6px] border border-[#22c55e4d] bg-[var(--card)] px-4 py-2.5 text-sm text-[var(--status-green)]">
-                    Changes saved successfully.
-                  </p>
-                ) : null}
-
-                <div className="flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNotesForIcl(row.notes_for_icl ?? "");
-                      setSaveError(null);
-                      setSaved(false);
-                    }}
-                    className="inline-flex h-9 items-center rounded-[6px] border border-[var(--border)] px-4 text-sm text-[var(--secondary)] transition-colors hover:text-[var(--foreground)]"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={isPending}
-                    className="inline-flex h-9 items-center rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)] disabled:opacity-50"
-                  >
-                    {isPending ? "Saving…" : "Save Changes"}
-                  </button>
-                </div>
+              <div className="px-[18px] py-[18px]">
+                {territoryMessageTrimmed ? (
+                  <p className="whitespace-pre-wrap text-sm text-[var(--foreground)]">{row.notes_for_icl}</p>
+                ) : (
+                  <p className="py-6 text-center text-sm text-[var(--muted)]">No messages yet.</p>
+                )}
               </div>
             </div>
           ) : null}
