@@ -1,15 +1,19 @@
+import type { ReactNode } from "react";
+
 import { StatusBadge } from "@/components/requests/status-badge";
 import type { LeadRequestStatus } from "@/types/enums";
 
 type Props = {
   entries: Array<{ status: LeadRequestStatus; count: number }>;
+  headerAction?: ReactNode;
 };
 
-export function StatusBreakdown({ entries }: Props) {
+export function StatusBreakdown({ entries, headerAction }: Props) {
   return (
     <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-[18px] py-[14px]">
         <h3 className="text-[15px] font-semibold text-[var(--foreground)]">Status Breakdown</h3>
+        {headerAction}
       </div>
       <div className="flex flex-col px-[18px]">
         {entries.length === 0 ? (

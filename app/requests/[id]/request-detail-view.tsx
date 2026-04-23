@@ -168,12 +168,14 @@ export function RequestDetailView({
   const [deletePending, setDeletePending] = useState(false);
 
   useEffect(() => {
-    setFormStatus(row.status);
-    setAttConfirmationNumber(row.att_confirmation_number ?? "");
-    setInternalNotes(row.internal_notes ?? "");
-    setNotesForIcl(row.notes_for_icl ?? "");
-    setApprovedZipCodes(row.approved_zip_codes ?? "");
-    setDeniedZipCodes(row.denied_zip_codes ?? "");
+    startTransition(() => {
+      setFormStatus(row.status);
+      setAttConfirmationNumber(row.att_confirmation_number ?? "");
+      setInternalNotes(row.internal_notes ?? "");
+      setNotesForIcl(row.notes_for_icl ?? "");
+      setApprovedZipCodes(row.approved_zip_codes ?? "");
+      setDeniedZipCodes(row.denied_zip_codes ?? "");
+    });
   }, [
     row.id,
     row.status,

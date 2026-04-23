@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -22,12 +22,12 @@ import {
   type LeadRequestRow,
 } from "@/lib/lead-requests/presentation";
 import { exportLeadRequests } from "@/lib/export/export-requests";
-import { evaluateSlaStatus } from "@/lib/sla/evaluate";
+import { evaluateSlaStatus, TERMINAL_REQUEST_STATUSES } from "@/lib/sla/evaluate";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/types/database";
 import type { LeadRequestStatus } from "@/types/enums";
 
-type SlaFilter = "all" | "overdue" | "at_risk" | "on_track";
+type SlaFilter = "all" | "overdue" | "at_risk" | "on_track" | "alerts";
 type SlaConfigRow = Pick<Tables<"lrt_sla_configs">, "campaign_id" | "lead_type" | "warning_hours">;
 type ProfileRow = Pick<Tables<"lrt_profiles">, "id" | "full_name" | "email">;
 
@@ -44,8 +44,16 @@ const STATUS_OPTIONS: Array<{ value: LeadRequestStatus; label: string }> = [
   { value: "leads_pulled_back", label: "Leads Pulled Back by Client" },
 ];
 
-export function DashboardView({ showAttImportLink }: { showAttImportLink: boolean }) {
+export function DashboardView({
+  showAttImportLink,
+  initialScope = "active",
+}: {
+  showAttImportLink: boolean;
+  initialScope?: "active" | "all";
+}) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [rows, setRows] = useState<LeadRequestRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [slaConfigs, setSlaConfigs] = useState<SlaConfigRow[]>([]);
@@ -69,6 +77,9 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
   const [dmaFilter, setDmaFilter] = useState<string>("all");
   const [dateFromFilter, setDateFromFilter] = useState<string>("");
   const [dateToFilter, setDateToFilter] = useState<string>("");
+  // "active" = non-terminal statuses only (the default dashboard view).
+  // "all" = no status scope filter applied (used by /requests archive route).
+  const [statusScope, setStatusScope] = useState<"active" | "all">(initialScope);
   const exportMenuRef = useRef<HTMLDivElement>(null);
   const isMountedRef = useRef(true);
 
@@ -125,6 +136,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
     setLoading(false);
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- initial client fetch populates dashboard state */
   useEffect(() => {
     isMountedRef.current = true;
     void loadDashboardData();
@@ -133,6 +145,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
       isMountedRef.current = false;
     };
   }, [loadDashboardData]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (!exportMenuOpen) {
@@ -147,6 +160,29 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [exportMenuOpen]);
+
+  /* eslint-disable react-hooks/set-state-in-effect -- sync filter UI from URL query (Next.js searchParams) */
+  useEffect(() => {
+    const slaParam = searchParams.get("sla");
+    if (slaParam === "alerts") {
+      setSlaFilter("alerts");
+    }
+    const scopeParam = searchParams.get("scope");
+    if (scopeParam === "all") {
+      setStatusScope("all");
+    }
+  }, [searchParams]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const replaceSearchParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      const next = new URLSearchParams(searchParams.toString());
+      mutate(next);
+      const q = next.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname);
+    },
+    [pathname, router, searchParams],
+  );
 
   const warningLookup = useMemo(() => buildSlaWarningLookup(slaConfigs), [slaConfigs]);
   const profileMap = useMemo(() => new Map(profiles.map((profile) => [profile.id, profile])), [profiles]);
@@ -202,6 +238,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
 
   const hasActiveFilters = useMemo(
     () =>
+      statusScope !== "active" ||
       statusFilter !== "all" ||
       leadTypeFilter !== "all" ||
       officeFilter !== "all" ||
@@ -211,6 +248,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
       searchTerm.trim() !== "" ||
       slaFilter !== "all",
     [
+      statusScope,
       statusFilter,
       leadTypeFilter,
       officeFilter,
@@ -224,9 +262,21 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
 
   const filteredRows = useMemo(() => {
     const query = searchTerm.trim().toLowerCase();
-    return withSla.filter(({ row, sla }) => {
-      if (slaFilter !== "all" && sla?.status !== slaFilter) {
-        return false;
+    return withSla.filter(({ row, status, sla }) => {
+      if (slaFilter !== "all") {
+        if (slaFilter === "alerts") {
+          if (sla?.status !== "overdue" && sla?.status !== "at_risk") {
+            return false;
+          }
+        } else if (sla?.status !== slaFilter) {
+          return false;
+        }
+      }
+
+      if (statusScope === "active") {
+        if (TERMINAL_REQUEST_STATUSES.has(status)) {
+          return false;
+        }
       }
 
       if (statusFilter !== "all" && row.status !== statusFilter) {
@@ -265,6 +315,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
   }, [
     searchTerm,
     slaFilter,
+    statusScope,
     statusFilter,
     leadTypeFilter,
     officeFilter,
@@ -324,6 +375,7 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
   }
 
   function clearAllFilters() {
+    setStatusScope("active");
     setStatusFilter("all");
     setLeadTypeFilter("all");
     setOfficeFilter("all");
@@ -332,6 +384,10 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
     setDateToFilter("");
     setSearchTerm("");
     setSlaFilter("all");
+    replaceSearchParams((p) => {
+      p.delete("sla");
+      p.delete("scope");
+    });
   }
 
   function handleExportSelected() {
@@ -410,6 +466,34 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
         <div>
           <h1 className="text-[20px] font-semibold tracking-tight text-[var(--foreground)]">Dashboard</h1>
           <p className="mt-1 text-[13px] text-[var(--muted)]">AT&amp;T Residential</p>
+          {statusScope === "active" ? (
+            <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+              Showing active requests only.{" "}
+              <button
+                type="button"
+                onClick={() => setStatusScope("all")}
+                className="text-[var(--accent)] hover:underline"
+              >
+                Show all
+              </button>
+            </p>
+          ) : (
+            <p className="mt-0.5 text-[11px] text-[var(--muted)]">
+              Showing all requests.{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusScope("active");
+                  replaceSearchParams((p) => {
+                    p.delete("scope");
+                  });
+                }}
+                className="text-[var(--accent)] hover:underline"
+              >
+                Active only
+              </button>
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -480,6 +564,24 @@ export function DashboardView({ showAttImportLink }: { showAttImportLink: boolea
           <LogoutButton />
         </div>
       </div>
+
+      {slaFilter === "alerts" ? (
+        <div className="rounded-[8px] border border-[color:rgba(245,158,11,0.35)] bg-[var(--card)] px-4 py-2.5 text-[12px] text-[var(--status-amber)]">
+          Showing overdue and at-risk requests only.{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setSlaFilter("all");
+              replaceSearchParams((p) => {
+                p.delete("sla");
+              });
+            }}
+            className="underline hover:no-underline"
+          >
+            Clear SLA filter
+          </button>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <button

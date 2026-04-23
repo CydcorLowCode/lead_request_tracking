@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 type Entry = {
   key: string;
   count: number;
@@ -8,6 +10,7 @@ type Entry = {
 type Props = {
   title: string;
   entries: Entry[];
+  headerAction?: ReactNode;
   labelFormatter?: (key: string) => string;
   /** How bar width is computed. "tint" uses tintPct; "count" scales by max count. */
   widthMode?: "tint" | "count";
@@ -18,6 +21,7 @@ type Props = {
 export function BarList({
   title,
   entries,
+  headerAction,
   labelFormatter = (k) => k,
   widthMode = "count",
   limit = 8,
@@ -30,7 +34,10 @@ export function BarList({
     <div className="overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)]">
       <div className="flex items-center justify-between border-b border-[var(--border)] px-[18px] py-[14px]">
         <h3 className="text-[15px] font-semibold text-[var(--foreground)]">{title}</h3>
-        <span className="text-[11px] text-[var(--muted)]">{entries.length} total</span>
+        <div className="flex items-center gap-2">
+          {headerAction}
+          <span className="text-[11px] text-[var(--muted)]">{entries.length} total</span>
+        </div>
       </div>
       <div className="flex flex-col gap-3 px-[18px] py-4">
         {visible.length === 0 ? (

@@ -9,6 +9,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "load-reference-data": "node scripts/load-reference-data.mjs"
   },
   "dependencies": {
