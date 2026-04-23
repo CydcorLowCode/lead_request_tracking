@@ -58,6 +58,7 @@ function mockLeadRequest(
     notes_for_icl: null,
     sf_visibility_date: null,
     decline_date: null,
+    resolved_at: null,
     sla_due_at: null,
     sla_status: "on_track",
     form_data: {},

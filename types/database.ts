@@ -2287,6 +2287,7 @@ export type Database = {
           notes_for_icl: string | null
           office: string | null
           owner_id: string
+          resolved_at: string | null
           sf_visibility_date: string | null
           sla_due_at: string | null
           sla_status: string
@@ -2326,6 +2327,7 @@ export type Database = {
           notes_for_icl?: string | null
           office?: string | null
           owner_id: string
+          resolved_at?: string | null
           sf_visibility_date?: string | null
           sla_due_at?: string | null
           sla_status?: string
@@ -2365,6 +2367,7 @@ export type Database = {
           notes_for_icl?: string | null
           office?: string | null
           owner_id?: string
+          resolved_at?: string | null
           sf_visibility_date?: string | null
           sla_due_at?: string | null
           sla_status?: string
