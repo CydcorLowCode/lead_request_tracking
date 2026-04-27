@@ -2,8 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getUnresolvedImportGroups, type UnresolvedImportGroup } from "@/app/imports/actions";
-import { LogoutButton } from "@/components/auth/logout-button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { getSessionContext } from "@/lib/auth/get-session-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -62,8 +60,6 @@ export default async function ImportsPage({
           >
             New import
           </Link>
-          <ThemeToggle />
-          <LogoutButton />
         </div>
       </div>
 

@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { LogoutButton } from "@/components/auth/logout-button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { getSessionContext } from "@/lib/auth/get-session-user";
 
 import { UploadForm } from "./upload-form";
@@ -30,10 +28,6 @@ export default async function NewImportPage() {
             Upload AT&amp;T Report
           </h1>
           <p className="mt-1 text-[13px] text-[var(--muted)]">NAM REQUESTS sheet · .xlsx only</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <LogoutButton />
         </div>
       </div>
       <UploadForm />

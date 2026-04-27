@@ -2,14 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
-import { LogoutButton } from "@/components/auth/logout-button";
 import { BarList } from "@/components/reports/bar-list";
 import { DateRangePicker, type Preset } from "@/components/reports/date-range-picker";
 import { KpiCard } from "@/components/reports/kpi-card";
 import { StatusBreakdown } from "@/components/reports/status-breakdown";
 import { ZipMap } from "@/components/reports/zip-map";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { exportLeadRequests } from "@/lib/export/export-requests";
 import { formatLeadType } from "@/lib/lead-requests/presentation";
 import { STATUS_COLORS } from "@/lib/reports/status-colors";
@@ -260,7 +258,6 @@ export function ReportsView() {
             onFromChange={setCustomFrom}
             onToChange={setCustomTo}
           />
-          <ThemeToggle />
           <button
             type="button"
             onClick={handleExport}
@@ -268,7 +265,6 @@ export function ReportsView() {
           >
             Export CSV
           </button>
-          <LogoutButton />
         </div>
       </div>
 

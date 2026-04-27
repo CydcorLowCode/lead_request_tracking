@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import { importAttReportAction, type AttImportRow } from "@/app/(territory-team)/dashboard/import/actions";
-import { LogoutButton } from "@/components/auth/logout-button";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   combineZipSources,
   isHoldPendingInfo,
@@ -507,7 +505,7 @@ export function AttImportView() {
 
   return (
     <main className="mx-auto flex w-full max-w-[1100px] flex-col gap-6 px-6 py-10">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start gap-4">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"
@@ -519,10 +517,6 @@ export function AttImportView() {
             <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">Import AT&amp;T Report</h1>
             <p className="mt-0.5 text-sm text-[var(--secondary)]">NAM REQUESTS sheet · territory team only</p>
           </div>
-        </div>
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <ThemeToggle />
-          <LogoutButton />
         </div>
       </div>
 

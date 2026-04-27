@@ -374,7 +374,7 @@ export function SubmitForm({
         </div>
         <div className="flex items-center gap-2">
           <p className="text-[12px] text-[var(--muted)]">{campaignName}</p>
-          <ThemeToggle />
+          {sessionRole !== "territory_team" ? <ThemeToggle /> : null}
         </div>
       </div>
 

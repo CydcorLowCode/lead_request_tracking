@@ -1,22 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { SlaChip } from "@/components/requests/sla-chip";
-import { StatusBadge } from "@/components/requests/status-badge";
+import { OwnerRequestRow } from "@/components/requests/owner-request-row";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   buildSlaWarningLookup,
-  formatLeadType,
-  formatShortDate,
   getWarningHoursForRequest,
   sortRequestsBySlaThenCreated,
   toLeadRequestStatus,
   type LeadRequestRow,
 } from "@/lib/lead-requests/presentation";
-import { evaluateSlaStatus, TERMINAL_REQUEST_STATUSES } from "@/lib/sla/evaluate";
+import { TERMINAL_REQUEST_STATUSES } from "@/lib/sla/evaluate";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/types/database";
 
@@ -45,7 +41,6 @@ function RequestCardSkeleton() {
 }
 
 export function MyRequestsView() {
-  const router = useRouter();
   const [rows, setRows] = useState<LeadRequestRow[]>([]);
   const [slaConfigs, setSlaConfigs] = useState<SlaConfigRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -197,45 +192,13 @@ export function MyRequestsView() {
 
       {!loading && !error && filteredRows.length > 0 ? (
         <div className="space-y-2">
-          {filteredRows.map((row) => {
-            const status = toLeadRequestStatus(row.status);
-            const sla = evaluateSlaStatus({
-              status,
-              slaDueAt: row.sla_due_at,
-              warningHours: getWarningHoursForRequest(row, warningLookup),
-            });
-
-            const overdue = sla?.status === "overdue";
-
-            return (
-              <button
-                key={row.id}
-                type="button"
-                onClick={() => router.push(`/requests/${row.id}`)}
-                className={`relative flex w-full flex-wrap items-center gap-3 overflow-hidden rounded-[10px] border border-[var(--border)] bg-[var(--card)] px-[18px] py-3.5 text-left transition-colors hover:border-[var(--border-hover)] lg:flex-nowrap lg:gap-3.5 ${
-                  overdue ? "border-l-[3px] border-l-[var(--status-red)] pl-[15px]" : ""
-                }`}
-              >
-                <span className="w-full shrink-0 font-mono text-[11px] text-[var(--accent)] lg:w-[130px]">
-                  {formatLeadType(row.lead_type)}
-                </span>
-                <span className="min-w-0 flex-1 text-[13px] text-[var(--foreground)]">{row.lead_area_requested}</span>
-                <span className="shrink-0">
-                  <StatusBadge status={status} />
-                </span>
-                <span className="shrink-0">
-                  <SlaChip
-                    slaStatus={sla?.status ?? null}
-                    hoursRemaining={sla?.hours ?? null}
-                    compact
-                  />
-                </span>
-                <span className="shrink-0 font-mono text-[11px] text-[var(--muted)] lg:ml-auto lg:w-[88px] lg:text-right">
-                  {formatShortDate(row.created_at)}
-                </span>
-              </button>
-            );
-          })}
+          {filteredRows.map((row) => (
+            <OwnerRequestRow
+              key={row.id}
+              row={row}
+              warningHours={getWarningHoursForRequest(row, warningLookup)}
+            />
+          ))}
         </div>
       ) : null}
     </main>

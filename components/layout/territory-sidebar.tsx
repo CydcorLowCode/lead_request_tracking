@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 
+import { LogoutButton } from "@/components/auth/logout-button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 
 function NavIcon({ children }: { children: React.ReactNode }) {
@@ -133,6 +135,13 @@ export function TerritorySidebar({
           <NavLink href="/imports" label="All Imports" active={onImports} />
         </div>
       </nav>
+
+      <div className="mt-auto border-t border-[var(--border)] pt-3">
+        <div className="flex items-center gap-2 px-2">
+          <ThemeToggle />
+          <LogoutButton />
+        </div>
+      </div>
     </aside>
   );
 }

@@ -8,9 +8,7 @@ import { toast } from "sonner";
 import { bulkDeleteRequestsAction, bulkUpdateStatusAction } from "@/app/(territory-team)/dashboard/actions";
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   buildSlaWarningLookup,
   formatLeadArea,
@@ -496,7 +494,6 @@ export function DashboardView({
           )}
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           {showAttImportLink ? (
             <Link
               href="/imports/new"
@@ -561,7 +558,6 @@ export function DashboardView({
           >
             New Request
           </Link>
-          <LogoutButton />
         </div>
       </div>
 
