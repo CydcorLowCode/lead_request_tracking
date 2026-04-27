@@ -55,7 +55,7 @@ export default function LoginPage() {
     }
 
     const nextRoute =
-      profile.role === "territory_team" ? "/dashboard" : "/my-requests";
+      profile.role === "territory_team" ? "/dashboard" : "/home";
     router.push(nextRoute);
     router.refresh();
   }

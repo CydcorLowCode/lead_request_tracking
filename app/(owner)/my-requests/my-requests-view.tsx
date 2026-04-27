@@ -6,9 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { SlaChip } from "@/components/requests/sla-chip";
 import { StatusBadge } from "@/components/requests/status-badge";
-import { LogoutButton } from "@/components/auth/logout-button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   buildSlaWarningLookup,
   formatLeadType,
@@ -128,23 +126,15 @@ export function MyRequestsView() {
   }, [activeTab, sortedRows]);
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-10">
+    <main className="flex w-full flex-col gap-6 px-8 py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-[var(--foreground)]">
-            My Requests
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/submit"
-            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)]"
-          >
-            New Request
-          </Link>
-          <ThemeToggle />
-          <LogoutButton />
-        </div>
+        <h1 className="text-[20px] font-semibold tracking-tight text-[var(--foreground)]">My Requests</h1>
+        <Link
+          href="/submit"
+          className="inline-flex h-10 items-center justify-center gap-1.5 rounded-[6px] border border-[var(--accent)] bg-[var(--accent)] px-4 text-[13px] font-medium text-white transition-colors hover:bg-[var(--accent2)]"
+        >
+          New Request
+        </Link>
       </div>
 
       <div className="mb-5 flex gap-0 border-b border-[var(--border)]">

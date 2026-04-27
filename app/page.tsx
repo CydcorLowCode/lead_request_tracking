@@ -10,5 +10,5 @@ export default async function Home() {
   if (ctx.isTerritoryTeam) {
     redirect("/dashboard");
   }
-  redirect("/my-requests");
+  redirect("/home");
 }
