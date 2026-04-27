@@ -6,6 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { OwnerRequestRow } from "@/components/requests/owner-request-row";
 import { StatusBadge } from "@/components/requests/status-badge";
+import { ZipMap } from "@/components/reports/zip-map";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   buildSlaWarningLookup,
@@ -17,6 +18,7 @@ import {
   toLeadRequestStatus,
   type LeadRequestRow,
 } from "@/lib/lead-requests/presentation";
+import { extractZipsFromRequest } from "@/lib/reports/extract-zips";
 import { TERMINAL_REQUEST_STATUSES } from "@/lib/sla/evaluate";
 import { createClient } from "@/lib/supabase/client";
 import type { Tables } from "@/types/database";
@@ -181,6 +183,7 @@ export function OwnerHomeView({ firstName }: OwnerHomeViewProps) {
     completedThisMonthCount,
     recentUpdates,
     activeRows,
+    rowsWithZips,
   } = useMemo(() => {
     const now = new Date();
     const cutoff = now.getTime() - SEVEN_D_MS;
@@ -222,12 +225,15 @@ export function OwnerHomeView({ firstName }: OwnerHomeViewProps) {
     const nonTerminal = rows.filter((row) => !TERMINAL_REQUEST_STATUSES.has(toLeadRequestStatus(row.status)));
     const activeTop = sortRequestsBySlaThenCreated(nonTerminal, warningLookup).slice(0, 5);
 
+    const rowsWithZips = rows.filter((row) => extractZipsFromRequest(row).length > 0);
+
     return {
       activeCount: active,
       inReviewCount: inReview,
       completedThisMonthCount: completedThisMonth,
       recentUpdates: recent,
       activeRows: activeTop,
+      rowsWithZips,
     };
   }, [rows, warningLookup]);
 
@@ -253,6 +259,12 @@ export function OwnerHomeView({ firstName }: OwnerHomeViewProps) {
         <StatCard label="In Review" value={inReviewCount} loading={loading} hint="Awaiting AT&T" />
         <StatCard label="Completed this month" value={completedThisMonthCount} loading={loading} />
       </div>
+
+      {!loading && rowsWithZips.length > 0 ? (
+        <section>
+          <ZipMap requests={rowsWithZips} height={360} />
+        </section>
+      ) : null}
 
       {!loading && error ? (
         <div className="rounded-[10px] border border-[#ef44444d] bg-[var(--card)] px-5 py-4 text-sm text-[var(--status-red)]">

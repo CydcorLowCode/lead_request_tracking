@@ -9,6 +9,7 @@ import type { ZipMarker } from "@/lib/reports/zip-map-aggregation";
 
 type Props = {
   markers: ZipMarker[];
+  height?: number;
 };
 
 const US_CENTER: [number, number] = [39.8283, -98.5795];
@@ -24,7 +25,7 @@ function FitToMarkers({ markers }: { markers: ZipMarker[] }) {
   return null;
 }
 
-export default function ZipMapInner({ markers }: Props) {
+export default function ZipMapInner({ markers, height = 520 }: Props) {
   const center = useMemo<[number, number]>(() => {
     if (markers.length === 0) return US_CENTER;
     return [markers[0].lat, markers[0].lng];
@@ -34,7 +35,8 @@ export default function ZipMapInner({ markers }: Props) {
     <MapContainer
       center={center}
       zoom={markers.length === 0 ? US_ZOOM : 6}
-      className="h-[520px] w-full rounded-[10px]"
+      className="w-full rounded-[10px]"
+      style={{ height: `${height}px` }}
       scrollWheelZoom
     >
       <TileLayer

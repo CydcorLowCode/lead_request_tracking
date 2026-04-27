@@ -19,9 +19,10 @@ const ZipMapInner = dynamic(() => import("./zip-map-inner"), {
 
 type Props = {
   requests: RequestWithFormData[];
+  height?: number; // px, default 520
 };
 
-export function ZipMap({ requests }: Props) {
+export function ZipMap({ requests, height = 520 }: Props) {
   const [markers, setMarkers] = useState<ZipMarker[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -86,15 +87,24 @@ export function ZipMap({ requests }: Props) {
       </div>
 
       {error ? (
-        <div className="flex h-[520px] items-center justify-center px-6 text-center text-[13px] text-[var(--status-red)]">
+        <div
+          className="flex items-center justify-center px-6 text-center text-[13px] text-[var(--status-red)]"
+          style={{ height: `${height}px` }}
+        >
           {error}
         </div>
       ) : markers === null ? (
-        <div className="flex h-[520px] items-center justify-center text-[13px] text-[var(--muted)]">
+        <div
+          className="flex items-center justify-center text-[13px] text-[var(--muted)]"
+          style={{ height: `${height}px` }}
+        >
           Loading map…
         </div>
       ) : markers.length === 0 ? (
-        <div className="flex h-[520px] flex-col items-center justify-center gap-1 px-6 text-center">
+        <div
+          className="flex flex-col items-center justify-center gap-1 px-6 text-center"
+          style={{ height: `${height}px` }}
+        >
           <p className="text-[13px] text-[var(--secondary)]">
             No zip codes in this date range.
           </p>
@@ -103,7 +113,7 @@ export function ZipMap({ requests }: Props) {
           </p>
         </div>
       ) : (
-        <ZipMapInner markers={markers} />
+        <ZipMapInner markers={markers} height={height} />
       )}
 
       <div className="flex flex-wrap gap-3 border-t border-[var(--border)] px-[18px] py-3">
